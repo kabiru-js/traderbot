@@ -1,7 +1,7 @@
 // End-to-end smoke test against a running API (node scripts/smoke.mjs).
 // Requires the API on http://localhost:8787 with a database available.
 
-const base = 'http://localhost:8787'
+const base = process.env.BASE_URL || 'http://localhost:8787'
 let failures = 0
 
 async function req(path, { method = 'GET', token, body } = {}) {
