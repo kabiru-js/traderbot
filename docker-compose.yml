@@ -1,0 +1,17 @@
+# Local Postgres for the NeuralVault backend.
+#   docker compose up -d
+# Then run the API with:  pnpm dev:server   (from the repo root)
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: neuralvault
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

@@ -1,0 +1,24 @@
+# Render blueprint — deploy via: Render dashboard → New+ → Blueprint → this repo
+# One service runs the frontend + API + trading engine + WebSocket.
+services:
+  - type: web
+    name: neuralvault
+    runtime: node
+    plan: free
+    buildCommand: corepack enable && pnpm install && pnpm --dir server install && pnpm build && pnpm --dir server build
+    startCommand: pnpm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DEMO_MODE
+        value: "true"
+      # Set these in the Render dashboard (secrets — no values here):
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
