@@ -248,7 +248,7 @@ function Nav({ active, setActive, onLaunch }: { active: string; setActive: (s: s
 }
 
 // ── HERO ──────────────────────────────────────────────────────────────────────
-function Hero() {
+function Hero({ onLaunch }: { onLaunch: () => void }) {
   const cryptoIcons = [
     { sym: '₿', name: 'BTC', color: '#F59E0B', x: 8, y: 15, delay: 0 },
     { sym: 'Ξ', name: 'ETH', color: '#8B5CF6', x: 85, y: 10, delay: 1.2 },
@@ -343,6 +343,7 @@ function Hero() {
           }}
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px) scale(1.02)' }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'none' }}
+          onClick={onLaunch}
           >Start Investing →</button>
           <button style={{
             background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)',
@@ -453,7 +454,7 @@ function About() {
               background: 'linear-gradient(135deg, #0EA5E9, #8B5CF6)',
               border: 'none', color: '#fff', padding: '14px 32px', borderRadius: 10,
               cursor: 'pointer', fontSize: 14, fontWeight: 600,
-            }}>Learn How It Works</button>
+            }} onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })}>Learn How It Works</button>
           </div>
           {/* Flow diagram */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 0, alignItems: 'center' }}>
@@ -537,7 +538,7 @@ function Features() {
 // ── HOW IT WORKS ──────────────────────────────────────────────────────────────
 function HowItWorks() {
   return (
-    <section style={{ padding: '100px 24px', background: 'rgba(255,255,255,0.01)' }}>
+    <section id="how-it-works" style={{ padding: '100px 24px', background: 'rgba(255,255,255,0.01)' }}>
       <div style={{ maxWidth: 1000, margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: 72 }}>
           <p style={{ color: '#0EA5E9', fontSize: 12, fontWeight: 600,
@@ -951,7 +952,7 @@ function Testimonials() {
 }
 
 // ── PRICING ───────────────────────────────────────────────────────────────────
-function Pricing() {
+function Pricing({ onLaunch }: { onLaunch: () => void }) {
   const plans = [
     { name: 'Starter', price: 'Free', desc: 'For beginners exploring AI investing',
       features: ['1 AI strategy','Up to $1,000 AUM','Basic analytics','Email support','Daily reports'],
@@ -1002,7 +1003,7 @@ function Pricing() {
                   color: p.highlight ? '#fff' : '#94A3B8',
                   fontSize: 14, fontWeight: 600, cursor: 'pointer', marginBottom: 28,
                   boxShadow: p.highlight ? '0 0 30px rgba(14,165,233,0.3)' : 'none',
-                }}>{p.cta}</button>
+                }} onClick={onLaunch}>{p.cta}</button>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {p.features.map(f => (
                     <div key={f} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
@@ -1314,7 +1315,7 @@ export default function App() {
       ) : (
       <div style={{ position: 'relative', zIndex: 1 }}>
         <Nav active={activeNav} setActive={setActiveNav} onLaunch={() => setView('app')} />
-        <Hero />
+        <Hero onLaunch={() => setView('app')} />
         <Trust />
         <About />
         <Features />
@@ -1323,7 +1324,7 @@ export default function App() {
         <Markets />
         <Stats />
         <Testimonials />
-        <Pricing />
+        <Pricing onLaunch={() => setView('app')} />
         <FAQ />
         <Contact />
         <Footer />
