@@ -45,6 +45,24 @@ export async function initDb(): Promise<void> {
     max: 5,
     ssl: needsSsl ? { rejectUnauthorized: false } : undefined,
   })
+
+  // Fail fast with a clear, credential-free diagnostic if the DB is
+  // unreachable (e.g. a mistyped DATABASE_URL on the host).
+  try {
+    const parsed = new URL(url)
+    console.log(
+      `[db] connecting to ${parsed.host}${parsed.pathname} (${
+        process.env.DATABASE_URL ? 'DATABASE_URL' : 'embedded'
+      })`,
+    )
+    await pool.query('SELECT 1')
+    console.log('[db] connected')
+  } catch (err) {
+    throw new Error(
+      `Database unreachable. Check the DATABASE_URL host in your environment. ` +
+        `${err instanceof Error ? err.message : String(err)}`,
+    )
+  }
 }
 
 /** Applies server/schema.sql (idempotent). */
