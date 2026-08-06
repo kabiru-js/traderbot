@@ -23,6 +23,7 @@ const MAX_RECONNECTS = 3
 export class BinanceFeed {
   private clients = new Map<string, WebSocket>()
   private prices = new Map<string, number>()
+  private history = new Map<string, number[]>()
   private listeners = new Map<string, Set<(price: number) => void>>()
   private reconnectTimers = new Map<string, NodeJS.Timeout>()
   private reconnectCount = new Map<string, number>()
@@ -54,6 +55,19 @@ export class BinanceFeed {
     return this.prices.get(symbol) ?? null
   }
 
+  /** Rolling price history (capped at 120 samples) for analysis/UI. */
+  getHistory(symbol: string): number[] {
+    return this.history.get(symbol) ?? []
+  }
+
+  private record(symbol: string, price: number): void {
+    const h = this.history.get(symbol) ?? []
+    h.push(price)
+    if (h.length > 120) h.shift()
+    this.history.set(symbol, h)
+    this.prices.set(symbol, price)
+  }
+
   isSimulated(symbol: string): boolean {
     return this.simulated.has(symbol)
   }
@@ -78,7 +92,7 @@ export class BinanceFeed {
         if (Number.isFinite(price)) {
           gotData = true
           this.reconnectCount.delete(symbol)
-          this.prices.set(symbol, price)
+          this.record(symbol, price)
           this.listeners.get(symbol)?.forEach((l) => l(price))
         }
       } catch {
@@ -138,13 +152,13 @@ export class BinanceFeed {
     console.warn(`[feed] ${symbol}: live feed unavailable — using simulated prices`)
 
     let price = SIM_BASE[symbol] ?? 100
-    this.prices.set(symbol, price)
+    this.record(symbol, price)
     this.listeners.get(symbol)?.forEach((l) => l(price))
     this.simTimers.set(
       symbol,
       setInterval(() => {
         price = price * (1 + (Math.random() - 0.5) * 0.0012)
-        this.prices.set(symbol, price)
+        this.record(symbol, price)
         this.listeners.get(symbol)?.forEach((l) => l(price))
       }, 1000),
     )

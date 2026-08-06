@@ -10,6 +10,7 @@ const serverDir = path.join(root, '..', 'server')
 const server = spawn(process.execPath, ['dist/index.js'], {
   cwd: serverDir,
   stdio: ['ignore', 'pipe', 'pipe'],
+  env: { ...process.env, ADMIN_EMAIL: 'admin@example.com' },
 })
 
 let log = ''

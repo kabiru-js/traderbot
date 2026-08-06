@@ -56,3 +56,55 @@ CREATE TABLE IF NOT EXISTS trades (
 );
 
 CREATE INDEX IF NOT EXISTS idx_trades_user ON trades (user_id, created_at DESC);
+
+-- ── Auth & profile ──
+ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'user';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS two_factor_enabled BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS two_factor_secret TEXT;
+
+-- One-time auth tokens (email verification, password reset)
+CREATE TABLE IF NOT EXISTS auth_tokens (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  purpose TEXT NOT NULL,
+  token_hash TEXT NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_auth_tokens_hash ON auth_tokens (token_hash);
+
+-- Notifications (security, price alerts, trade, system)
+CREATE TABLE IF NOT EXISTS notifications (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  type TEXT NOT NULL,
+  title TEXT NOT NULL,
+  body TEXT NOT NULL,
+  read BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications (user_id, created_at DESC);
+
+-- User-defined price alerts
+CREATE TABLE IF NOT EXISTS price_alerts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  symbol TEXT NOT NULL,
+  target_price NUMERIC(18, 6) NOT NULL,
+  direction TEXT NOT NULL,
+  triggered BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_price_alerts_open ON price_alerts (triggered);
+
+-- Securely stored exchange API connections (keys encrypted at rest)
+CREATE TABLE IF NOT EXISTS exchange_accounts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  exchange TEXT NOT NULL,
+  label TEXT,
+  api_key_enc TEXT NOT NULL,
+  api_secret_enc TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);

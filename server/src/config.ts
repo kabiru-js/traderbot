@@ -10,4 +10,16 @@ export const config = {
   corsOrigin: process.env.CORS_ORIGIN || '*',
   // Absolute path to the built frontend to serve statically (optional).
   frontendDist: process.env.FRONTEND_DIST || '',
+  // Public base URL used in verification/reset links (Render URL in prod).
+  appUrl: process.env.APP_URL || 'http://localhost:8443',
+  // Email delivery (Resend). Without a key, emails are logged instead.
+  resendApiKey: process.env.RESEND_API_KEY || '',
+  resendFrom: process.env.RESEND_FROM || 'NeuralVault <onboarding@resend.dev>',
+  // Encryption key for exchange API secrets (any string; hashed to 32 bytes).
+  encryptionKey: process.env.ENCRYPTION_KEY || 'dev-encryption-key-change-me',
+  // Email that gets the admin role on signup.
+  adminEmail: process.env.ADMIN_EMAIL || '',
+  // Optional OpenAI-compatible provider for AI analysis.
+  aiApiUrl: process.env.AI_API_URL || '',
+  aiApiKey: process.env.AI_API_KEY || '',
 }

@@ -58,17 +58,31 @@ The schema is applied automatically on boot (`server/schema.sql`, idempotent).
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| POST | `/api/auth/signup` | — | Create account `{email, password, name}` |
-| POST | `/api/auth/login` | — | Log in, returns JWT |
+| POST | `/api/auth/signup` | — | Create account `{email, password, name}` (email verification link) |
+| POST | `/api/auth/verify-email` | — | Verify email `{token}` |
+| POST | `/api/auth/forgot-password` | — | Send reset link `{email}` (devLink in demo mode) |
+| POST | `/api/auth/reset-password` | — | Set new password `{token, password}` |
+| POST | `/api/auth/login` | — | Log in, returns JWT (responds `requiresTwoFactor` when 2FA on) |
+| POST | `/api/auth/2fa/setup` | ✅ | Generate TOTP secret + otpauth URL |
+| POST | `/api/auth/2fa/enable` · `/2fa/disable` | ✅ | Enable/disable 2FA `{code}` |
 | GET | `/api/auth/me` | ✅ | Current user |
+| GET · PATCH | `/api/profile` | ✅ | Read / update profile |
 | GET | `/api/wallet` | ✅ | Balance + transactions |
 | POST | `/api/wallet/deposit` | ✅ | Add funds `{amount}` (instant in demo mode, Stripe Checkout otherwise) |
+| POST | `/api/wallet/withdraw` | ✅ | Withdraw funds `{amount}` |
 | GET | `/api/bots` | ✅ | Your bots (with live price + PnL) |
 | POST | `/api/bots` | ✅ | Create bot `{symbol, strategy, capital}` |
-| POST | `/api/bots/:id/start` | ✅ | Start a bot |
-| POST | `/api/bots/:id/stop` | ✅ | Stop a bot (closes position) |
+| POST | `/api/bots/:id/start` · `/stop` | ✅ | Start / stop a bot |
 | GET | `/api/portfolio` | ✅ | Balance, equity curve, open positions, trades |
-| GET | `/api/health` | — | Health + `marketFeed: live|simulated` |
+| GET | `/api/markets` | — | Live prices + history for all symbols |
+| GET | `/api/ai/analysis` · `/ai/portfolio` · `/ai/recommendations` | ✅ | Market analysis, risk score, recommendations |
+| GET | `/api/notifications` | ✅ | In-app notifications + unread count |
+| POST | `/api/notifications/read-all` · `/:id/read` | ✅ | Mark read |
+| GET · POST | `/api/notifications/alerts` | ✅ | List / create price alerts |
+| DELETE | `/api/notifications/alerts/:id` | ✅ | Delete price alert |
+| GET · POST · DELETE | `/api/exchanges` | ✅ | Connect / list / remove exchange API keys (AES-256-GCM at rest) |
+| GET | `/api/admin/users` · `/stats` · `/transactions` · `/system` | admin | User management, analytics, monitoring |
+| GET | `/api/health` | — | Health + `marketFeed: live\|simulated` |
 | POST | `/api/stripe-webhook` | signature | Stripe deposit webhook |
 
 Real-time Socket.IO events: `wallet:update`, `bot:update`, `trade:filled`, `price:update`.

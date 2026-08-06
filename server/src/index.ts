@@ -4,14 +4,22 @@ import path from 'node:path'
 import cors from 'cors'
 import express from 'express'
 import { config } from './config'
-import { ensureSchema, initDb } from './db'
+import { ensureSchema, initDb, pool } from './db'
 import { handleStripeWebhook } from './stripe'
 import { createSocketServer } from './socketServer'
 import { engine } from './trading/engine'
+import { notifyUser } from './notify'
 import authRoutes from './routes/auth'
 import walletRoutes from './routes/wallet'
 import botRoutes from './routes/bots'
 import portfolioRoutes from './routes/portfolio'
+import profileRoutes from './routes/profile'
+import marketsRoutes from './routes/markets'
+import notificationRoutes from './routes/notifications'
+import aiRoutes from './routes/ai'
+import adminRoutes from './routes/admin'
+import exchangeRoutes from './routes/exchanges'
+import { SYMBOLS } from './routes/bots'
 
 async function main(): Promise<void> {
   console.log('[api] starting…')
@@ -47,6 +55,12 @@ async function main(): Promise<void> {
   app.use('/api/wallet', walletRoutes)
   app.use('/api/bots', botRoutes)
   app.use('/api/portfolio', portfolioRoutes)
+  app.use('/api/profile', profileRoutes)
+  app.use('/api/markets', marketsRoutes)
+  app.use('/api/notifications', notificationRoutes)
+  app.use('/api/ai', aiRoutes)
+  app.use('/api/admin', adminRoutes)
+  app.use('/api/exchanges', exchangeRoutes)
 
   // Serve the built frontend (from the Vite build at the repo root) if present.
   const dist =
@@ -67,7 +81,36 @@ async function main(): Promise<void> {
   })
 
   await engine.resumeRunning()
-  console.log('[engine] resumed running bots')
+  await engine.warmup(SYMBOLS)
+  console.log('[engine] resumed running bots, markets warm')
+
+  // Price-alert watcher: checks every 5s and fires notifications.
+  setInterval(async () => {
+    try {
+      const { rows } = await pool.query(
+        'SELECT * FROM price_alerts WHERE triggered = false',
+      )
+      for (const alert of rows) {
+        const price = engine.getPrice(alert.symbol)
+        if (price == null) continue
+        const target = Number(alert.target_price)
+        const hit = alert.direction === 'above' ? price >= target : price <= target
+        if (hit) {
+          await pool.query('UPDATE price_alerts SET triggered = true WHERE id = $1', [
+            alert.id,
+          ])
+          await notifyUser(
+            alert.user_id,
+            'price_alert',
+            `Price alert: ${alert.symbol}`,  
+            `${alert.symbol} is ${alert.direction} ${target} — currently $${price.toFixed(2)}.`,
+          )
+        }
+      }
+    } catch (err) {
+      console.error('[alerts] check error', err)
+    }
+  }, 5000)
 
   // Clean shutdown so the embedded database closes its files properly.
   process.on('SIGINT', () => process.exit(0))

@@ -1,8 +1,10 @@
 import { Router } from 'express'
-import { pool } from '../db'
+import { pool, withTx } from '../db'
 import { authMiddleware, requireUser } from '../auth'
 import { config } from '../config'
 import { creditDeposit } from '../walletService'
+import { notifyUser } from '../notify'
+import { emitToUser } from '../realtime'
 
 const r = Router()
 r.use(authMiddleware)
@@ -49,6 +51,51 @@ r.post('/deposit', async (req, res) => {
     req.headers.origin ?? 'http://localhost:8443',
   )
   res.json({ checkoutUrl })
+})
+
+r.post('/withdraw', async (req, res) => {
+  const u = requireUser(req)
+  const amount = Number(req.body?.amount)
+  if (!Number.isFinite(amount) || amount <= 0 || amount > 100_000) {
+    res.status(400).json({ error: 'Amount must be between $1 and $100,000' })
+    return
+  }
+
+  const balanceRes = await pool.query(
+    'SELECT balance_usd FROM wallets WHERE user_id = $1',
+    [u.id],
+  )
+  const balance = Number(balanceRes.rows[0]?.balance_usd ?? 0)
+  if (amount > balance) {
+    res.status(400).json({ error: 'Insufficient balance' })
+    return
+  }
+
+  // Demo mode processes withdrawals instantly. With real payment rails
+  // (Stripe Payouts etc.) this becomes a queued approval flow.
+  await withTx(async (c) => {
+    await c.query(
+      'UPDATE wallets SET balance_usd = balance_usd - $1, updated_at = now() WHERE user_id = $2',
+      [amount, u.id],
+    )
+    await c.query(
+      'INSERT INTO transactions (user_id, type, amount, reference) VALUES ($1, $2, $3, $4)',
+      [u.id, 'withdraw', -amount, 'demo-withdraw'],
+    )
+  })
+  const updated = await pool.query(
+    'SELECT balance_usd FROM wallets WHERE user_id = $1',
+    [u.id],
+  )
+  const newBalance = Number(updated.rows[0]?.balance_usd ?? 0)
+  emitToUser(u.id, 'wallet:update', { balance: newBalance })
+  await notifyUser(
+    u.id,
+    'security',
+    'Withdrawal processed',
+    `$${amount.toFixed(2)} was withdrawn from your wallet.`,
+  )
+  res.json({ balance: newBalance, reference: 'demo-withdraw' })
 })
 
 export default r

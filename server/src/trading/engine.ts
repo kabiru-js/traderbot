@@ -43,6 +43,7 @@ export class TradingEngine {
   private feed = new BinanceFeed()
   private states = new Map<string, BotState>()
   private lastPriceEmit = new Map<string, number>()
+  private warmed = new Set<string>()
 
   // Tunable strategy parameters (paper-trading demo values).
   private readonly WINDOW = 20 // rolling price window for the SMA
@@ -53,6 +54,23 @@ export class TradingEngine {
 
   getPrice(symbol: string): number | null {
     return this.feed.getPrice(symbol)
+  }
+
+  getHistory(symbol: string): number[] {
+    return this.feed.getHistory(symbol)
+  }
+
+  activeCount(): number {
+    return this.states.size
+  }
+
+  /** Pre-subscribes market data so prices exist for all symbols. */
+  async warmup(symbols: string[]): Promise<void> {
+    for (const symbol of symbols) {
+      if (this.warmed.has(symbol)) continue
+      this.warmed.add(symbol)
+      this.feed.subscribe(symbol, () => {})
+    }
   }
 
   isSimulated(symbol: string): boolean {

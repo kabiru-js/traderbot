@@ -7,6 +7,7 @@ export interface AuthUser {
   id: string
   email: string
   name: string
+  role?: string
 }
 
 export const hashPassword = (password: string) => bcrypt.hash(password, 10)
