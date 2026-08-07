@@ -98,6 +98,8 @@ r = await req('/api/auth/verify-email', { method: 'POST', body: { token: tokenFr
 check('POST /api/auth/verify-email', r.status === 200 && r.data.ok === true)
 r = await req('/api/profile', { token })
 check('profile shows emailVerified', r.data.profile?.emailVerified === true)
+r = await req('/api/auth/resend-verification', { method: 'POST', token })
+check('resend verification (already verified)', r.status === 200 && r.data.alreadyVerified === true)
 
 console.log('4. Password reset')
 r = await req('/api/auth/signup', {

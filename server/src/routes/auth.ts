@@ -95,6 +95,31 @@ r.post('/verify-email', async (req, res) => {
   res.json({ ok: true })
 })
 
+r.post('/resend-verification', authMiddleware, async (req, res) => {
+  const u = requireUser(req)
+  const { rows } = await pool.query(
+    'SELECT email, email_verified_at FROM users WHERE id = $1',
+    [u.id],
+  )
+  const user = rows[0]
+  if (!user) {
+    res.status(404).json({ error: 'User not found' })
+    return
+  }
+  if (user.email_verified_at) {
+    res.json({ ok: true, alreadyVerified: true })
+    return
+  }
+  const token = await createAuthToken(u.id, 'email_verify', 24 * 60)
+  const link = buildLink('verify-email', token)
+  await sendEmail(
+    user.email,
+    'Verify your NeuralVault email',
+    `<p>Confirm your email:</p><p><a href="${link}">Verify email</a></p>`,
+  )
+  res.json({ ok: true, devLink: config.demoMode ? link : undefined })
+})
+
 r.post('/forgot-password', async (req, res) => {
   const { email } = req.body ?? {}
   const normalized = String(email ?? '').toLowerCase()

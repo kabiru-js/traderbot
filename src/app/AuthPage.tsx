@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { useAuth } from '../store'
+import { TwoFactorRequiredError, useAuth } from '../store'
 import { disconnectSocket } from '../socket'
 import { Card, ErrorBox, Field, GradientButton, inputStyle } from './ui'
 
@@ -9,6 +9,8 @@ export default function AuthPage() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [totpCode, setTotpCode] = useState('')
+  const [awaitingCode, setAwaitingCode] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -19,9 +21,14 @@ export default function AuthPage() {
     try {
       disconnectSocket()
       if (mode === 'signup') await signup(email, password, name)
-      else await login(email, password)
+      else await login(email, password, awaitingCode ? totpCode : undefined)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Request failed')
+      if (err instanceof TwoFactorRequiredError) {
+        setAwaitingCode(true)
+        setError('Two-factor code required — enter the code from your authenticator app.')
+      } else {
+        setError(err instanceof Error ? err.message : 'Request failed')
+      }
     } finally {
       setBusy(false)
     }
@@ -98,9 +105,26 @@ export default function AuthPage() {
                   placeholder="8+ characters"
                 />
               </Field>
+              {awaitingCode && (
+                <Field label="Authenticator code">
+                  <input
+                    style={inputStyle}
+                    inputMode="numeric"
+                    value={totpCode}
+                    onChange={(e) => setTotpCode(e.target.value)}
+                    placeholder="123456"
+                  />
+                </Field>
+              )}
               {error && <ErrorBox message={error} />}
               <GradientButton disabled={busy} style={{ width: '100%' }}>
-                {busy ? 'Please wait…' : mode === 'signup' ? 'Create account' : 'Log in'}
+                {busy
+                  ? 'Please wait…'
+                  : awaitingCode
+                    ? 'Verify code'
+                    : mode === 'signup'
+                      ? 'Create account'
+                      : 'Log in'}
               </GradientButton>
             </form>
             <p style={{ textAlign: 'center', color: '#475569', fontSize: 13, marginTop: 16 }}>

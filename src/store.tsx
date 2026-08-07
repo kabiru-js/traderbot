@@ -8,10 +8,18 @@ import {
 } from 'react'
 import { api, getToken, setToken, type User } from './api'
 
+/** Thrown when login succeeds but a TOTP code is required. */
+export class TwoFactorRequiredError extends Error {
+  constructor() {
+    super('Two-factor code required')
+    this.name = 'TwoFactorRequiredError'
+  }
+}
+
 interface AuthState {
   user: User | null
   loading: boolean
-  login: (email: string, password: string) => Promise<void>
+  login: (email: string, password: string, totpCode?: string) => Promise<void>
   signup: (email: string, password: string, name: string) => Promise<void>
   logout: () => void
 }
@@ -41,10 +49,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('nv-unauthorized', onUnauthorized)
   }, [])
 
-  const login = useCallback(async (email: string, password: string) => {
-    const { user, token } = await api.login(email, password)
-    setToken(token)
-    setUser(user)
+  const login = useCallback(async (email: string, password: string, totpCode?: string) => {
+    const res = await api.login(email, password, totpCode)
+    if (res.requiresTwoFactor) throw new TwoFactorRequiredError()
+    if (!res.user || !res.token) throw new Error('Login failed')
+    setToken(res.token)
+    setUser(res.user)
   }, [])
 
   const signup = useCallback(

@@ -4,6 +4,9 @@ import { disconnectSocket, getSocket } from '../socket'
 import DashboardTab from './DashboardTab'
 import BotsTab from './BotsTab'
 import WalletTab from './WalletTab'
+import AlertsTab from './AlertsTab'
+import SettingsTab from './SettingsTab'
+import AdminTab from './AdminTab'
 
 /** Subscribes to the user's real-time events and exposes a refresh tick. */
 export function useLive(): { tick: number; prices: Record<string, number> } {
@@ -19,11 +22,13 @@ export function useLive(): { tick: number; prices: Record<string, number> } {
     s.on('wallet:update', bump)
     s.on('bot:update', bump)
     s.on('trade:filled', bump)
+    s.on('notification', bump)
     s.on('price:update', onPrice)
     return () => {
       s.off('wallet:update', bump)
       s.off('bot:update', bump)
       s.off('trade:filled', bump)
+      s.off('notification', bump)
       s.off('price:update', onPrice)
     }
   }, [])
@@ -31,7 +36,7 @@ export function useLive(): { tick: number; prices: Record<string, number> } {
   return { tick, prices }
 }
 
-type Tab = 'dashboard' | 'bots' | 'wallet'
+type Tab = 'dashboard' | 'bots' | 'wallet' | 'alerts' | 'settings' | 'admin'
 
 export default function AppArea({ onExit }: { onExit: () => void }) {
   const { user, logout } = useAuth()
@@ -48,6 +53,9 @@ export default function AppArea({ onExit }: { onExit: () => void }) {
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'bots', label: 'Bots' },
     { id: 'wallet', label: 'Wallet' },
+    { id: 'alerts', label: 'Alerts' },
+    { id: 'settings', label: 'Settings' },
+    ...(user?.role === 'admin' ? [{ id: 'admin' as Tab, label: 'Admin' }] : []),
   ]
 
   return (
@@ -140,6 +148,9 @@ export default function AppArea({ onExit }: { onExit: () => void }) {
         {tab === 'dashboard' && <DashboardTab tick={live.tick} prices={live.prices} />}
         {tab === 'bots' && <BotsTab tick={live.tick} prices={live.prices} />}
         {tab === 'wallet' && <WalletTab tick={live.tick} />}
+        {tab === 'alerts' && <AlertsTab tick={live.tick} />}
+        {tab === 'settings' && <SettingsTab tick={live.tick} />}
+        {tab === 'admin' && <AdminTab tick={live.tick} />}
       </main>
     </div>
   )
