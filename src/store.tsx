@@ -20,7 +20,7 @@ interface AuthState {
   user: User | null
   loading: boolean
   login: (email: string, password: string, totpCode?: string) => Promise<void>
-  signup: (email: string, password: string, name: string) => Promise<void>
+  signup: (email: string, password: string, name: string, username?: string) => Promise<void>
   logout: () => void
 }
 
@@ -58,8 +58,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const signup = useCallback(
-    async (email: string, password: string, name: string) => {
-      const { user, token } = await api.signup(email, password, name)
+    async (email: string, password: string, name: string, username?: string) => {
+      const { user, token } = await api.signup(email, password, name, username)
       setToken(token)
       setUser(user)
     },

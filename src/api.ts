@@ -52,11 +52,13 @@ export interface User {
   email: string
   name: string
   role?: string
+  username?: string
 }
 
 export interface Profile {
   id: string
   email: string
+  username: string | null
   name: string
   role: string
   emailVerified: boolean
@@ -193,10 +195,10 @@ export const api = {
   health: () => request<{ status: string; demoMode: boolean; marketFeed: string }>('/health'),
 
   // auth
-  signup: (email: string, password: string, name: string) =>
+  signup: (email: string, password: string, name: string, username?: string) =>
     request<{ user: User; token: string; emailVerification?: { pending: boolean; devLink?: string } }>(
       '/auth/signup',
-      { method: 'POST', body: JSON.stringify({ email, password, name }) },
+      { method: 'POST', body: JSON.stringify({ email, password, name, username }) },
     ),
   login: (email: string, password: string, totpCode?: string) =>
     request<{ user?: User; token?: string; requiresTwoFactor?: boolean }>('/auth/login', {
@@ -228,11 +230,11 @@ export const api = {
 
   // profile
   profile: () => request<{ profile: Profile }>('/profile'),
-  updateProfile: (name: string) =>
-    request<{ profile: { id: string; email: string; name: string; role: string } }>('/profile', {
-      method: 'PATCH',
-      body: JSON.stringify({ name }),
-    }),
+  updateProfile: (name: string, username?: string) =>
+    request<{ profile: { id: string; email: string; username: string | null; name: string; role: string } }>(
+      '/profile',
+      { method: 'PATCH', body: JSON.stringify({ name, username }) },
+    ),
 
   // wallet
   wallet: () => request<Wallet>('/wallet'),

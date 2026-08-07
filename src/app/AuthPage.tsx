@@ -7,6 +7,7 @@ export default function AuthPage() {
   const { login, signup } = useAuth()
   const [mode, setMode] = useState<'login' | 'signup'>('signup')
   const [name, setName] = useState('')
+  const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [totpCode, setTotpCode] = useState('')
@@ -20,7 +21,7 @@ export default function AuthPage() {
     setBusy(true)
     try {
       disconnectSocket()
-      if (mode === 'signup') await signup(email, password, name)
+      if (mode === 'signup') await signup(email, password, name, username || undefined)
       else await login(email, password, awaitingCode ? totpCode : undefined)
     } catch (err) {
       if (err instanceof TwoFactorRequiredError) {
@@ -84,14 +85,24 @@ export default function AuthPage() {
                   />
                 </Field>
               )}
-              <Field label="Email">
+              {mode === 'signup' && (
+                <Field label="Username (optional)">
+                  <input
+                    style={inputStyle}
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="marcus_btc"
+                  />
+                </Field>
+              )}
+              <Field label={mode === 'signup' ? 'Email' : 'Email or username'}>
                 <input
                   style={inputStyle}
-                  type="email"
+                  type={mode === 'signup' ? 'email' : 'text'}
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
+                  placeholder={mode === 'signup' ? 'you@example.com' : 'you@example.com or username'}
                 />
               </Field>
               <Field label="Password">

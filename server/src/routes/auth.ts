@@ -20,8 +20,14 @@ function buildLink(purpose: 'verify-email' | 'reset-password', token: string): s
   return `${config.appUrl}/${purpose}?token=${token}`
 }
 
+const USERNAME_RE = /^[a-z0-9_]{3,30}$/
+
 r.post('/signup', async (req, res) => {
   const { email, password, name } = req.body ?? {}
+  const username =
+    typeof req.body?.username === 'string'
+      ? req.body.username.trim().toLowerCase()
+      : ''
   if (typeof email !== 'string' || !EMAIL_RE.test(email)) {
     res.status(400).json({ error: 'A valid email is required' })
     return
@@ -30,10 +36,16 @@ r.post('/signup', async (req, res) => {
     res.status(400).json({ error: 'Password must be at least 8 characters' })
     return
   }
+  if (username && !USERNAME_RE.test(username)) {
+    res.status(400).json({
+      error: 'Username must be 3-30 characters (letters, numbers, underscores)',
+    })
+    return
+  }
   const displayName =
     typeof name === 'string' && name.trim()
       ? name.trim().slice(0, 60)
-      : email.split('@')[0]
+      : username || email.split('@')[0]
 
   const existing = await pool.query('SELECT id FROM users WHERE email = $1', [
     email.toLowerCase(),
@@ -41,6 +53,15 @@ r.post('/signup', async (req, res) => {
   if (existing.rowCount) {
     res.status(409).json({ error: 'Email already registered' })
     return
+  }
+  if (username) {
+    const taken = await pool.query('SELECT id FROM users WHERE username = $1', [
+      username,
+    ])
+    if (taken.rowCount) {
+      res.status(409).json({ error: 'Username already taken' })
+      return
+    }
   }
 
   const role =
@@ -50,9 +71,9 @@ r.post('/signup', async (req, res) => {
 
   const passwordHash = await hashPassword(password)
   const { rows } = await pool.query(
-    `INSERT INTO users (email, password_hash, name, role)
-     VALUES ($1, $2, $3, $4) RETURNING id, email, name, role`,
-    [email.toLowerCase(), passwordHash, displayName, role],
+    `INSERT INTO users (email, password_hash, name, role, username)
+     VALUES ($1, $2, $3, $4, $5) RETURNING id, email, name, role, username`,
+    [email.toLowerCase(), passwordHash, displayName, role, username || null],
   )
   await pool.query('INSERT INTO wallets (user_id) VALUES ($1)', [rows[0].id])
 
@@ -70,6 +91,7 @@ r.post('/signup', async (req, res) => {
     email: rows[0].email as string,
     name: rows[0].name as string,
     role: rows[0].role as string,
+    username: (rows[0].username as string | null) ?? undefined,
   }
   res.status(201).json({
     user,
@@ -170,15 +192,23 @@ r.post('/reset-password', async (req, res) => {
 })
 
 r.post('/login', async (req, res) => {
-  const { email, password, totpCode } = req.body ?? {}
-  if (typeof email !== 'string' || typeof password !== 'string') {
-    res.status(400).json({ error: 'Email and password are required' })
+  const { password, totpCode } = req.body ?? {}
+  // Accept email or username in the same field.
+  const identifier = String(
+    req.body?.email ?? req.body?.username ?? '',
+  ).toLowerCase()
+  if (!identifier || typeof password !== 'string') {
+    res.status(400).json({ error: 'Email/username and password are required' })
     return
   }
+  const isEmail = identifier.includes('@')
   const { rows } = await pool.query(
-    `SELECT id, email, name, role, password_hash, two_factor_enabled, two_factor_secret
-     FROM users WHERE email = $1`,
-    [email.toLowerCase()],
+    isEmail
+      ? `SELECT id, email, username, name, role, password_hash, two_factor_enabled, two_factor_secret
+         FROM users WHERE email = $1`
+      : `SELECT id, email, username, name, role, password_hash, two_factor_enabled, two_factor_secret
+         FROM users WHERE username = $1`,
+    [identifier],
   )
   const row = rows[0]
   if (!row || !(await verifyPassword(password, row.password_hash))) {
@@ -203,6 +233,7 @@ r.post('/login', async (req, res) => {
     email: row.email as string,
     name: row.name as string,
     role: (row.role as string) || 'user',
+    username: (row.username as string | null) ?? undefined,
   }
   await notifyUser(
     user.id,

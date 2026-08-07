@@ -20,6 +20,7 @@ export default function SettingsTab({ tick }: { tick: number }) {
   const exchanges = useFetch<{ accounts: ExchangeAccount[] }>(() => api.exchanges(), [])
 
   const [name, setName] = useState('')
+  const [username, setUsername] = useState('')
   const [verifyLink, setVerifyLink] = useState<string | null>(null)
   const [verifyMsg, setVerifyMsg] = useState<string | null>(null)
   const [twoFaSecret, setTwoFaSecret] = useState<string | null>(null)
@@ -40,7 +41,10 @@ export default function SettingsTab({ tick }: { tick: number }) {
     setError(null)
     setBusy(true)
     try {
-      await api.updateProfile(name.trim() || p?.name || '')
+      await api.updateProfile(
+        name.trim() || p?.name || '',
+        username.trim() || undefined,
+      )
       profile.refresh()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Request failed')
@@ -157,6 +161,14 @@ export default function SettingsTab({ tick }: { tick: number }) {
               defaultValue={p?.name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Your name"
+            />
+          </Field>
+          <Field label="Username (login with this)">
+            <input
+              style={inputStyle}
+              defaultValue={p?.username ?? ''}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="marcus_btc"
             />
           </Field>
           <div style={{ marginBottom: 14 }}>

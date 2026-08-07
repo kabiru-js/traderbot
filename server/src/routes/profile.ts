@@ -5,10 +5,12 @@ import { authMiddleware, requireUser } from '../auth'
 const r = Router()
 r.use(authMiddleware)
 
+const USERNAME_RE = /^[a-z0-9_]{3,30}$/
+
 r.get('/', async (req, res) => {
   const u = requireUser(req)
   const { rows } = await pool.query(
-    `SELECT id, email, name, role, email_verified_at, two_factor_enabled, created_at
+    `SELECT id, email, username, name, role, email_verified_at, two_factor_enabled, created_at
      FROM users WHERE id = $1`,
     [u.id],
   )
@@ -21,6 +23,7 @@ r.get('/', async (req, res) => {
     profile: {
       id: row.id,
       email: row.email,
+      username: row.username ?? null,
       name: row.name,
       role: row.role,
       emailVerified: !!row.email_verified_at,
@@ -32,14 +35,46 @@ r.get('/', async (req, res) => {
 
 r.patch('/', async (req, res) => {
   const u = requireUser(req)
-  const name = String(req.body?.name ?? '').trim().slice(0, 60)
-  if (!name) {
-    res.status(400).json({ error: 'Name is required' })
+  const name =
+    typeof req.body?.name === 'string' ? req.body.name.trim().slice(0, 60) : undefined
+  const username =
+    typeof req.body?.username === 'string'
+      ? req.body.username.trim().toLowerCase()
+      : undefined
+
+  if (!name && username === undefined) {
+    res.status(400).json({ error: 'Nothing to update' })
     return
   }
-  await pool.query('UPDATE users SET name = $1 WHERE id = $2', [name, u.id])
+  if (username !== undefined && username && !USERNAME_RE.test(username)) {
+    res.status(400).json({
+      error: 'Username must be 3-30 characters (letters, numbers, underscores)',
+    })
+    return
+  }
+  if (username) {
+    const taken = await pool.query(
+      'SELECT id FROM users WHERE username = $1 AND id <> $2',
+      [username, u.id],
+    )
+    if (taken.rowCount) {
+      res.status(409).json({ error: 'Username already taken' })
+      return
+    }
+  }
+
+  if (name) {
+    await pool.query('UPDATE users SET name = $1 WHERE id = $2', [name, u.id])
+  }
+  if (username !== undefined) {
+    await pool.query('UPDATE users SET username = $1 WHERE id = $2', [
+      username || null,
+      u.id,
+    ])
+  }
+
   const { rows } = await pool.query(
-    'SELECT id, email, name, role FROM users WHERE id = $1',
+    'SELECT id, email, username, name, role FROM users WHERE id = $1',
     [u.id],
   )
   res.json({ profile: rows[0] })

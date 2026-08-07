@@ -93,6 +93,23 @@ check('login wrong password rejected', r.status === 401)
 r = await req('/api/auth/me', { token })
 check('GET /api/auth/me', r.status === 200 && r.data.user.email === email)
 
+console.log('2b. Username login')
+const uname = `smokebot${Date.now()}`
+r = await req('/api/auth/signup', {
+  method: 'POST',
+  body: { email: `uname-${Date.now()}@example.com`, password: 'password123', name: 'Username User', username: uname },
+})
+check('signup with username', r.status === 201 && !!r.data.token, JSON.stringify(r.data))
+r = await req('/api/auth/login', { method: 'POST', body: { username: uname, password: 'password123' } })
+check('login with username', r.status === 200 && !!r.data.token)
+r = await req('/api/auth/login', { method: 'POST', body: { username: uname, password: 'wrong-password' } })
+check('username login wrong password rejected', r.status === 401)
+r = await req('/api/auth/signup', {
+  method: 'POST',
+  body: { email: `dup-${Date.now()}@example.com`, password: 'password123', name: 'Dup', username: uname },
+})
+check('duplicate username rejected', r.status === 409)
+
 console.log('3. Email verification')
 r = await req('/api/auth/verify-email', { method: 'POST', body: { token: tokenFromLink(verifyLink) } })
 check('POST /api/auth/verify-email', r.status === 200 && r.data.ok === true)
@@ -136,8 +153,13 @@ r = await req('/api/auth/2fa/disable', { method: 'POST', token, body: { code: to
 check('2fa disable', r.status === 200 && r.data.twoFactorEnabled === false)
 
 console.log('6. Profile')
-r = await req('/api/profile', { method: 'PATCH', token, body: { name: 'Renamed Tester' } })
-check('PATCH /api/profile', r.status === 200 && r.data.profile?.name === 'Renamed Tester')
+const newUname = `renamed${Date.now()}`
+r = await req('/api/profile', { method: 'PATCH', token, body: { name: 'Renamed Tester', username: newUname } })
+check('PATCH /api/profile (name + username)', r.status === 200 && r.data.profile?.name === 'Renamed Tester' && r.data.profile?.username === newUname, JSON.stringify(r.data))
+r = await req('/api/auth/login', { method: 'POST', body: { username: newUname, password: 'password123' } })
+check('login with updated username', r.status === 200 && !!r.data.token)
+r = await req('/api/profile', { token })
+check('GET /api/profile shows username', r.data.profile?.username === newUname)
 
 console.log('7. Wallet')
 r = await req('/api/wallet', { token })
