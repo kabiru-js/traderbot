@@ -157,7 +157,7 @@ function Nav({ active, setActive, onLaunch }: { active: string; setActive: (s: s
     window.addEventListener('scroll', fn)
     return () => window.removeEventListener('scroll', fn)
   }, [])
-  const links = ['Home','AI Trading','Markets','Portfolio','Pricing','About','FAQ','Contact']
+  const links = ['Home','AI Trading','Markets','Portfolio','About','FAQ','Contact']
   const scroll = (id: string) => {
     const el = document.getElementById(id.toLowerCase().replace(' ', '-'))
     el?.scrollIntoView({ behavior: 'smooth' })
@@ -951,76 +951,6 @@ function Testimonials() {
   )
 }
 
-// ── PRICING ───────────────────────────────────────────────────────────────────
-function Pricing({ onLaunch }: { onLaunch: () => void }) {
-  const plans = [
-    { name: 'Starter', price: 'Free', desc: 'For beginners exploring AI investing',
-      features: ['1 AI strategy','Up to $1,000 AUM','Basic analytics','Email support','Daily reports'],
-      cta: 'Start Free', highlight: false },
-    { name: 'Professional', price: '$49', period: '/mo', desc: 'For serious digital asset investors',
-      features: ['5 AI strategies','Unlimited AUM','Advanced analytics','Priority support','Real-time signals','Portfolio optimization','API access'],
-      cta: 'Start 14-Day Trial', highlight: true },
-    { name: 'Enterprise', price: '$149', period: '/mo', desc: 'For institutional-grade management',
-      features: ['Unlimited strategies','Unlimited AUM','Custom AI models','Dedicated manager','White-glove onboarding','Custom reporting','SLA guarantee'],
-      cta: 'Contact Sales', highlight: false },
-  ]
-  return (
-    <section id="pricing" style={{ padding: '100px 24px' }}>
-      <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: 64 }}>
-          <p style={{ color: '#0EA5E9', fontSize: 12, fontWeight: 600,
-            letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 16 }}>Pricing</p>
-          <h2 style={{ fontFamily: 'Outfit', fontSize: 'clamp(32px, 3.5vw, 48px)',
-            fontWeight: 700, color: '#F0F4FF', letterSpacing: '-0.02em' }}>
-            Simple, <span className="gradient-text">transparent pricing</span>
-          </h2>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }} className="hero-grid">
-          {plans.map((p) => (
-            <div key={p.name} className={p.highlight ? 'grad-border' : ''} style={{ borderRadius: 20 }}>
-              <div className="glass" style={{
-                borderRadius: 20, padding: '36px 28px',
-                border: p.highlight ? 'none' : '1px solid rgba(255,255,255,0.06)',
-                background: p.highlight ? 'rgba(14,165,233,0.06)' : 'rgba(255,255,255,0.02)',
-                position: 'relative',
-              }}>
-                {p.highlight && (
-                  <div style={{ position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)',
-                    background: 'linear-gradient(135deg, #0EA5E9, #8B5CF6)',
-                    borderRadius: 100, padding: '4px 16px', fontSize: 11, fontWeight: 600, color: '#fff',
-                    whiteSpace: 'nowrap' }}>Most Popular</div>
-                )}
-                <p style={{ color: '#94A3B8', fontSize: 13, fontWeight: 500, marginBottom: 8 }}>{p.name}</p>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 6 }}>
-                  <span style={{ fontFamily: 'Outfit', fontSize: 44, fontWeight: 800, color: '#F0F4FF', lineHeight: 1 }}>{p.price}</span>
-                  {p.period && <span style={{ color: '#475569', fontSize: 14 }}>{p.period}</span>}
-                </div>
-                <p style={{ color: '#475569', fontSize: 13, marginBottom: 28 }}>{p.desc}</p>
-                <button className={p.highlight ? 'btn-shine' : ''} style={{
-                  width: '100%', padding: '13px', borderRadius: 10,
-                  background: p.highlight ? 'linear-gradient(135deg, #0EA5E9, #8B5CF6)' : 'transparent',
-                  border: p.highlight ? 'none' : '1px solid rgba(255,255,255,0.12)',
-                  color: p.highlight ? '#fff' : '#94A3B8',
-                  fontSize: 14, fontWeight: 600, cursor: 'pointer', marginBottom: 28,
-                  boxShadow: p.highlight ? '0 0 30px rgba(14,165,233,0.3)' : 'none',
-                }} onClick={onLaunch}>{p.cta}</button>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {p.features.map(f => (
-                    <div key={f} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                      <span style={{ color: '#10B981', fontSize: 14 }}>✓</span>
-                      <span style={{ color: '#94A3B8', fontSize: 13 }}>{f}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  )
-}
-
 // ── FAQ ───────────────────────────────────────────────────────────────────────
 function FAQ() {
   const [open, setOpen] = useState<number | null>(0)
@@ -1324,7 +1254,6 @@ export default function App() {
         <Markets />
         <Stats />
         <Testimonials />
-        <Pricing onLaunch={() => setView('app')} />
         <FAQ />
         <Contact />
         <Footer />
