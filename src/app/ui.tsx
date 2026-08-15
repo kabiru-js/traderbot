@@ -47,9 +47,48 @@ export function useFetch<T>(
 
 export function Card({ children, style }: { children: ReactNode; style?: CSSProperties }) {
   return (
-    <div className="glass" style={{ borderRadius: 16, padding: 20, ...style }}>
+    <div className="glass" style={{ borderRadius: 12, padding: 20, ...style }}>
       {children}
     </div>
+  )
+}
+
+export function Sparkline({
+  data,
+  color = '#0EA5E9',
+  width = 80,
+  height = 24,
+}: {
+  data: number[]
+  color?: string
+  width?: number
+  height?: number
+}) {
+  if (data.length < 2) return <span style={{ color: '#475569', fontSize: 11 }}>—</span>
+  const min = Math.min(...data)
+  const max = Math.max(...data)
+  const range = max - min || 1
+  const pts = data
+    .map(
+      (v, i) =>
+        `${((i / (data.length - 1)) * width).toFixed(1)},${(
+          height -
+          2 -
+          ((v - min) / range) * (height - 4)
+        ).toFixed(1)}`,
+    )
+    .join(' ')
+  return (
+    <svg width={width} height={height} style={{ display: 'block' }}>
+      <polyline
+        points={pts}
+        fill="none"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+    </svg>
   )
 }
 
