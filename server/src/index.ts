@@ -9,6 +9,7 @@ import { handleStripeWebhook } from './stripe'
 import { createSocketServer } from './socketServer'
 import { engine } from './trading/engine'
 import { notifyUser } from './notify'
+import { monitorCryptoDeposits } from './cryptoDeposits'
 import authRoutes from './routes/auth'
 import walletRoutes from './routes/wallet'
 import botRoutes from './routes/bots'
@@ -111,6 +112,15 @@ async function main(): Promise<void> {
       console.error('[alerts] check error', err)
     }
   }, 5000)
+
+  // Crypto-deposit watcher: auto-confirms on-chain (or simulated) deposits.
+  setInterval(async () => {
+    try {
+      await monitorCryptoDeposits()
+    } catch (err) {
+      console.error('[deposits] monitor error', err)
+    }
+  }, 10_000)
 
   // Clean shutdown so the embedded database closes its files properly.
   process.on('SIGINT', () => process.exit(0))

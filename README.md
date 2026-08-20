@@ -69,6 +69,9 @@ The schema is applied automatically on boot (`server/schema.sql`, idempotent).
 | GET · PATCH | `/api/profile` | ✅ | Read / update profile |
 | GET | `/api/wallet` | ✅ | Balance + transactions |
 | POST | `/api/wallet/deposit` | ✅ | Add funds `{amount}` (instant in demo mode, Stripe Checkout otherwise) |
+| POST | `/api/wallet/deposit/crypto` | ✅ | Create USDC deposit → returns platform address, QR payload, wallet deep link |
+| GET | `/api/wallet/deposits` | ✅ | List crypto deposits |
+| POST | `/api/wallet/deposits/:id/simulate-transfer` | ✅ | Demo: mark sent → auto-confirmed on-chain shortly after |
 | POST | `/api/wallet/withdraw` | ✅ | Withdraw funds `{amount}` |
 | GET | `/api/bots` | ✅ | Your bots (with live price + PnL) |
 | POST | `/api/bots` | ✅ | Create bot `{symbol, strategy, capital}` |

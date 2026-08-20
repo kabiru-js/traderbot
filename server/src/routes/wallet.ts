@@ -5,6 +5,12 @@ import { config } from '../config'
 import { creditDeposit } from '../walletService'
 import { notifyUser } from '../notify'
 import { emitToUser } from '../realtime'
+import {
+  createCryptoDeposit,
+  listCryptoDeposits,
+  simulateCryptoTransfer,
+  toPublicDeposit,
+} from '../cryptoDeposits'
 
 const r = Router()
 r.use(authMiddleware)
@@ -96,6 +102,44 @@ r.post('/withdraw', async (req, res) => {
     `$${amount.toFixed(2)} was withdrawn from your wallet.`,
   )
   res.json({ balance: newBalance, reference: 'demo-withdraw' })
+})
+
+// ── Crypto-native deposits (USDC on Ethereum) ────────────────────
+
+r.post('/deposit/crypto', async (req, res) => {
+  const u = requireUser(req)
+  const amount = Number(req.body?.amount)
+  if (!Number.isFinite(amount) || amount <= 0 || amount > 100_000) {
+    res.status(400).json({ error: 'Amount must be between $1 and $100,000' })
+    return
+  }
+  const open = await pool.query(
+    `SELECT count(*)::int AS n FROM crypto_deposits
+     WHERE user_id = $1 AND status IN ('pending', 'confirming')`,
+    [u.id],
+  )
+  if (open.rows[0].n >= 5) {
+    res.status(400).json({ error: 'Too many pending deposits — confirm or cancel them first' })
+    return
+  }
+  const deposit = await createCryptoDeposit(u.id, Math.round(amount * 100) / 100)
+  res.status(201).json({ deposit: toPublicDeposit(deposit) })
+})
+
+r.get('/deposits', async (req, res) => {
+  const u = requireUser(req)
+  const deposits = await listCryptoDeposits(u.id)
+  res.json({ deposits: deposits.map(toPublicDeposit) })
+})
+
+r.post('/deposits/:id/simulate-transfer', async (req, res) => {
+  const u = requireUser(req)
+  const ok = await simulateCryptoTransfer(req.params.id, u.id)
+  if (!ok) {
+    res.status(404).json({ error: 'Deposit not found or already submitted' })
+    return
+  }
+  res.json({ ok: true, status: 'confirming' })
 })
 
 export default r

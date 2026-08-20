@@ -12,6 +12,7 @@ import {
   inputStyle,
   useFetch,
 } from './ui'
+import CryptoDepositCard from './CryptoDepositCard'
 
 export default function WalletTab({ tick }: { tick: number }) {
   const { data, error, loading, refresh } = useFetch<Wallet>(() => api.wallet(), [tick])
@@ -78,6 +79,8 @@ export default function WalletTab({ tick }: { tick: number }) {
           </p>
         </Card>
       </div>
+
+      <CryptoDepositCard tick={tick} />
 
       <Card style={{ marginTop: 20 }}>
         <p style={{ color: '#F0F4FF', fontSize: 14, fontWeight: 600, marginBottom: 14 }}>

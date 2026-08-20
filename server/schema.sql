@@ -116,3 +116,19 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username
 
 -- Realistic paper execution: per-fill taker fee (USD)
 ALTER TABLE trades ADD COLUMN IF NOT EXISTS fee NUMERIC(18, 2) NOT NULL DEFAULT 0;
+
+-- Crypto-native deposits (USDC on Ethereum)
+CREATE TABLE IF NOT EXISTS crypto_deposits (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  asset TEXT NOT NULL DEFAULT 'USDC',
+  network TEXT NOT NULL DEFAULT 'Ethereum',
+  address TEXT NOT NULL,
+  amount_usd NUMERIC(18, 2) NOT NULL,
+  tx_hash TEXT,
+  status TEXT NOT NULL DEFAULT 'pending',  -- pending | confirming | confirmed
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  confirmed_at TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS idx_crypto_deposits_open ON crypto_deposits (status);

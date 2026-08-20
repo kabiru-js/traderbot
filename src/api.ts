@@ -140,6 +140,20 @@ export interface ExchangeAccount {
   createdAt: string
 }
 
+export interface CryptoDeposit {
+  id: string
+  asset: string
+  network: string
+  address: string
+  amountUsd: number
+  status: string
+  txHash: string | null
+  createdAt: string
+  qrPayload: string
+  deepLink: string
+  demo: boolean
+}
+
 export interface Market {
   symbol: string
   price: number | null
@@ -249,6 +263,14 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ amount }),
     }),
+  cryptoDeposit: (amount: number) =>
+    request<{ deposit: CryptoDeposit }>('/wallet/deposit/crypto', {
+      method: 'POST',
+      body: JSON.stringify({ amount }),
+    }),
+  cryptoDeposits: () => request<{ deposits: CryptoDeposit[] }>('/wallet/deposits'),
+  simulateCryptoTransfer: (id: string) =>
+    request<{ ok: boolean }>(`/wallet/deposits/${id}/simulate-transfer`, { method: 'POST' }),
 
   // bots
   bots: () => request<{ bots: Bot[] }>('/bots'),

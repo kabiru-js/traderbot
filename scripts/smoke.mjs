@@ -183,6 +183,23 @@ check('overdraft rejected', r.status === 400)
 r = await req('/api/wallet', { token })
 check('wallet reflects withdraw', r.status === 200 && r.data.transactions.length === 2)
 
+console.log('7b. Crypto deposits')
+r = await req('/api/wallet/deposit/crypto', { method: 'POST', token, body: { amount: 500 } })
+check('create crypto deposit', r.status === 201 && r.data.deposit?.status === 'pending' && !!r.data.deposit?.address, JSON.stringify(r.data).slice(0, 160))
+const cryptoDepositId = r.data.deposit?.id ?? ''
+r = await req('/api/wallet/deposits', { token })
+check('list crypto deposits', r.status === 200 && r.data.deposits?.length === 1)
+r = await req('/api/wallet/deposit/crypto', { method: 'POST', token, body: { amount: -5 } })
+check('invalid crypto deposit rejected', r.status === 400)
+r = await req(`/api/wallet/deposits/${cryptoDepositId}/simulate-transfer`, { method: 'POST', token })
+check('simulate transfer → confirming', r.status === 200 && r.data.status === 'confirming')
+console.log('  waiting 35s for on-chain auto-confirm…')
+await new Promise((resolve) => setTimeout(resolve, 35000))
+r = await req('/api/wallet/deposits', { token })
+check('crypto deposit auto-confirmed', r.data.deposits?.[0]?.status === 'confirmed', JSON.stringify(r.data).slice(0, 160))
+r = await req('/api/wallet', { token })
+check('wallet credited after crypto confirm', r.data.balance === 3500, `balance=${r.data.balance}`)
+
 console.log('8. Bots')
 r = await req('/api/bots', { method: 'POST', token, body: { symbol: 'BTCUSDT', strategy: 'momentum', capital: 1000 } })
 check('POST /api/bots', r.status === 201 && !!r.data.bot?.id, JSON.stringify(r.data))
@@ -198,7 +215,7 @@ console.log('9. Market data, portfolio, AI (waiting 14s…)')
 await new Promise((resolve) => setTimeout(resolve, 14000))
 
 r = await req('/api/portfolio', { token })
-check('GET /api/portfolio (balance 3000)', r.status === 200 && r.data.balance === 3000, JSON.stringify(r.data).slice(0, 160))
+check('GET /api/portfolio (balance 3500)', r.status === 200 && r.data.balance === 3500, JSON.stringify(r.data).slice(0, 160))
 
 r = await req('/api/bots', { token })
 const listed = r.data.bots?.[0]

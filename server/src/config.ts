@@ -22,4 +22,8 @@ export const config = {
   // Optional OpenAI-compatible provider for AI analysis.
   aiApiUrl: process.env.AI_API_URL || '',
   aiApiKey: process.env.AI_API_KEY || '',
+  // Crypto-native deposits: our USDC (Ethereum) receiving address + Etherscan key.
+  // Without these, deposits run in demo mode (auto-confirmed after simulation).
+  platformDepositAddress: process.env.PLATFORM_DEPOSIT_ADDRESS || '',
+  etherscanApiKey: process.env.ETHERSCAN_API_KEY || '',
 }
