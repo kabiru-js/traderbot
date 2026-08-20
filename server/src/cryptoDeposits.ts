@@ -98,6 +98,13 @@ export async function confirmCryptoDeposit(deposit: CryptoDepositRow): Promise<v
  */
 export async function monitorCryptoDeposits(): Promise<void> {
   if (config.platformDepositAddress && config.etherscanApiKey) {
+    // Only spend Etherscan API calls when there is actually something to
+    // watch — otherwise skip the poll entirely.
+    const { rows } = await pool.query(
+      `SELECT count(*)::int AS n FROM crypto_deposits
+       WHERE status IN ('pending', 'confirming')`,
+    )
+    if (rows[0].n === 0) return
     await monitorOnChain()
     return
   }
@@ -115,7 +122,7 @@ export async function monitorCryptoDeposits(): Promise<void> {
 async function monitorOnChain(): Promise<void> {
   try {
     const url =
-      `https://api.etherscan.io/api?module=account&action=tokentx` +
+      `https://api.etherscan.io/v2/api?chainid=1&module=account&action=tokentx` +
       `&contractaddress=${USDC_MAINNET}` +
       `&address=${config.platformDepositAddress}&page=1&offset=50&sort=desc` +
       `&apikey=${config.etherscanApiKey}`
