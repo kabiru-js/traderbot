@@ -113,3 +113,6 @@ CREATE TABLE IF NOT EXISTS exchange_accounts (
 ALTER TABLE users ADD COLUMN IF NOT EXISTS username TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username
   ON users (username) WHERE username IS NOT NULL;
+
+-- Realistic paper execution: per-fill taker fee (USD)
+ALTER TABLE trades ADD COLUMN IF NOT EXISTS fee NUMERIC(18, 2) NOT NULL DEFAULT 0;

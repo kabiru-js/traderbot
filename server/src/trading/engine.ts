@@ -1,6 +1,6 @@
 import { pool, withTx } from '../db'
 import { emitToUser } from '../realtime'
-import { BinanceFeed } from './binance'
+import { MarketFeed } from './feed'
 
 const round = (n: number, d = 2) => Math.round(n * 10 ** d) / 10 ** d
 
@@ -40,10 +40,15 @@ interface BotState {
  * the owning user's socket in real time.
  */
 export class TradingEngine {
-  private feed = new BinanceFeed()
+  private feed = new MarketFeed()
   private states = new Map<string, BotState>()
   private lastPriceEmit = new Map<string, number>()
   private warmed = new Set<string>()
+
+  // Realistic paper-execution parameters.
+  private readonly FEE_RATE = 0.001 // 0.1% taker fee per fill
+  private readonly SLIP_MIN = 0.0002 // 0.02–0.06% adverse slippage
+  private readonly SLIP_MAX = 0.0006
 
   // Tunable strategy parameters (paper-trading demo values).
   private readonly WINDOW = 20 // rolling price window for the SMA
@@ -187,33 +192,38 @@ export class TradingEngine {
     side: 'LONG' | 'SHORT',
     price: number,
   ): Promise<void> {
-    const qty = round(state.capital / price, 8)
+    // Simulated fill at the live mark price, with adverse slippage + taker fee
+    // so the paper trade looks exactly like a real market order.
+    const fill = round(this.fillPrice(price, side), 6)
+    const qty = round(state.capital / fill, 8)
+    const fee = round(fill * qty * this.FEE_RATE, 2)
     await withTx(async (c) => {
       await c.query(
         'UPDATE bots SET position_side = $1, position_size = $2, entry_price = $3 WHERE id = $4',
-        [side, qty, price, state.id],
+        [side, qty, fill, state.id],
       )
       await c.query(
-        'INSERT INTO trades (bot_id, user_id, side, price, qty) VALUES ($1, $2, $3, $4, $5)',
-        [state.id, state.userId, side === 'LONG' ? 'BUY' : 'SELL', price, qty],
+        'INSERT INTO trades (bot_id, user_id, side, price, qty, fee) VALUES ($1, $2, $3, $4, $5, $6)',
+        [state.id, state.userId, side === 'LONG' ? 'BUY' : 'SELL', fill, qty, fee],
       )
     })
     state.positionSide = side
-    state.entryPrice = price
+    state.entryPrice = fill
     state.qty = qty
     state.lastTradeAt = Date.now()
     emitToUser(state.userId, 'trade:filled', {
       bot_id: state.id,
       symbol: state.symbol,
       side: side === 'LONG' ? 'BUY' : 'SELL',
-      price,
+      price: fill,
       qty,
+      fee,
       status: 'opened',
     })
     emitToUser(state.userId, 'bot:update', {
       id: state.id,
       position_side: side,
-      entry_price: price,
+      entry_price: fill,
       position_size: qty,
     })
   }
@@ -222,9 +232,17 @@ export class TradingEngine {
     const side = state.positionSide!
     const qty = state.qty!
     const entry = state.entryPrice!
-    const pnl = round(
-      side === 'LONG' ? (price - entry) * qty : (entry - price) * qty,
+    const exitFill = round(
+      this.fillPrice(price, side === 'LONG' ? 'SHORT' : 'LONG'),
+      6,
     )
+    const gross = round(
+      side === 'LONG' ? (exitFill - entry) * qty : (entry - exitFill) * qty,
+      2,
+    )
+    const entryFee = round(entry * qty * this.FEE_RATE, 2)
+    const exitFee = round(exitFill * qty * this.FEE_RATE, 2)
+    const pnl = round(gross - entryFee - exitFee)
 
     await withTx(async (c) => {
       await c.query(
@@ -234,8 +252,8 @@ export class TradingEngine {
         [pnl, state.id],
       )
       await c.query(
-        'INSERT INTO trades (bot_id, user_id, side, price, qty, pnl_usd) VALUES ($1, $2, $3, $4, $5, $6)',
-        [state.id, state.userId, side === 'LONG' ? 'SELL' : 'BUY', price, qty, pnl],
+        'INSERT INTO trades (bot_id, user_id, side, price, qty, pnl_usd, fee) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+        [state.id, state.userId, side === 'LONG' ? 'SELL' : 'BUY', exitFill, qty, pnl, exitFee],
       )
       await c.query(
         'UPDATE wallets SET balance_usd = balance_usd + $1, updated_at = now() WHERE user_id = $2',
@@ -256,8 +274,9 @@ export class TradingEngine {
       bot_id: state.id,
       symbol: state.symbol,
       side: side === 'LONG' ? 'SELL' : 'BUY',
-      price,
+      price: exitFill,
       qty,
+      fee: exitFee,
       pnl,
       status: 'closed',
     })
@@ -274,6 +293,12 @@ export class TradingEngine {
     emitToUser(state.userId, 'wallet:update', {
       balance: Number(rows[0]?.balance_usd ?? 0),
     })
+  }
+
+  /** Fill price with adverse slippage vs the mark price. */
+  private fillPrice(mark: number, side: 'LONG' | 'SHORT'): number {
+    const slip = this.SLIP_MIN + Math.random() * (this.SLIP_MAX - this.SLIP_MIN)
+    return side === 'LONG' ? mark * (1 + slip) : mark * (1 - slip)
   }
 }
 

@@ -49,7 +49,7 @@ r.get('/', async (req, res) => {
     [u.id],
   )
   const trades = await pool.query(
-    `SELECT t.id, t.side, t.price, t.qty, t.pnl_usd, t.created_at, b.symbol
+    `SELECT t.id, t.side, t.price, t.qty, t.pnl_usd, t.fee, t.created_at, b.symbol
      FROM trades t JOIN bots b ON b.id = t.bot_id
      WHERE t.user_id = $1 ORDER BY t.created_at DESC LIMIT 20`,
     [u.id],
@@ -85,6 +85,7 @@ r.get('/', async (req, res) => {
       price: Number(t.price),
       qty: Number(t.qty),
       pnl_usd: t.pnl_usd != null ? Number(t.pnl_usd) : null,
+      fee: Number(t.fee ?? 0),
     })),
   })
 })

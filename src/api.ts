@@ -102,6 +102,7 @@ export interface Trade {
   price: number
   qty: number
   pnl_usd: number | null
+  fee?: number
   created_at: string
 }
 

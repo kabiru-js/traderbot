@@ -91,6 +91,8 @@ export class BinanceFeed {
         const price = parseFloat(msg.p ?? '')
         if (Number.isFinite(price)) {
           gotData = true
+          // Recovered — stop any random-walk fallback for this symbol.
+          if (this.simulated.has(symbol)) this.stopSimulation(symbol)
           this.reconnectCount.delete(symbol)
           this.record(symbol, price)
           this.listeners.get(symbol)?.forEach((l) => l(price))
