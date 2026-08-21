@@ -17,6 +17,7 @@ const statusTone = (s: string) =>
 export default function CryptoDepositCard({ tick }: { tick: number }) {
   const { data, refresh } = useFetch<{ deposits: CryptoDeposit[] }>(() => api.cryptoDeposits(), [tick])
   const [amount, setAmount] = useState('500')
+  const [network, setNetwork] = useState<'Ethereum' | 'Solana'>('Ethereum')
   const [created, setCreated] = useState<CryptoDeposit | null>(null)
   const [copied, setCopied] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -29,7 +30,7 @@ export default function CryptoDepositCard({ tick }: { tick: number }) {
     setError(null)
     setBusy(true)
     try {
-      const res = await api.cryptoDeposit(Number(amount))
+      const res = await api.cryptoDeposit(Number(amount), network)
       setCreated(res.deposit)
       refresh()
     } catch (e) {
@@ -67,7 +68,7 @@ export default function CryptoDepositCard({ tick }: { tick: number }) {
   return (
     <Card>
       <p style={{ color: '#F0F4FF', fontSize: 14, fontWeight: 600, marginBottom: 4 }}>
-        Crypto Deposit <span style={{ color: '#64748B', fontWeight: 400 }}>· USDC on Ethereum</span>
+        Crypto Deposit <span style={{ color: '#64748B', fontWeight: 400 }}>· USDC</span>
       </p>
       <p style={{ color: '#64748B', fontSize: 12, marginBottom: 14 }}>
         {active?.demo
@@ -77,17 +78,27 @@ export default function CryptoDepositCard({ tick }: { tick: number }) {
       {error && <ErrorBox message={error} />}
 
       {!active || (active.status === 'confirmed' && !created) ? (
-        <div style={{ display: 'flex', gap: 10, alignItems: 'end', maxWidth: 420 }}>
-          <Field label="Amount (USDC)">
-            <input
-              style={inputStyle}
-              type="number"
-              min={1}
-              max={100000}
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-            />
-          </Field>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'end', maxWidth: 620, flexWrap: 'wrap' }}>
+          <div style={{ width: 150 }}>
+            <Field label="Network">
+              <select style={inputStyle} value={network} onChange={(e) => setNetwork(e.target.value as 'Ethereum' | 'Solana')}>
+                <option value="Ethereum">Ethereum</option>
+                <option value="Solana">Solana</option>
+              </select>
+            </Field>
+          </div>
+          <div style={{ width: 150 }}>
+            <Field label="Amount (USDC)">
+              <input
+                style={inputStyle}
+                type="number"
+                min={1}
+                max={100000}
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+              />
+            </Field>
+          </div>
           <GradientButton onClick={create} disabled={busy} style={{ height: 42 }}>
             {busy ? '…' : 'Generate deposit address'}
           </GradientButton>
@@ -117,7 +128,7 @@ export default function CryptoDepositCard({ tick }: { tick: number }) {
               </span>
             </div>
             <p style={{ color: '#475569', fontSize: 11, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              Network: Ethereum (ERC-20) · Never send other assets
+              Network: {active.network} ({active.network === 'Solana' ? 'SPL' : 'ERC-20'}) · Never send other assets
             </p>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
               <code
@@ -168,7 +179,7 @@ export default function CryptoDepositCard({ tick }: { tick: number }) {
                   textDecoration: 'none',
                 }}
               >
-                Open in wallet →
+                Open in {active.network === 'Solana' ? 'Phantom' : 'MetaMask'} →
               </a>
               {active.status === 'pending' && (
                 <button

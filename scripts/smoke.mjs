@@ -183,22 +183,34 @@ check('overdraft rejected', r.status === 400)
 r = await req('/api/wallet', { token })
 check('wallet reflects withdraw', r.status === 200 && r.data.transactions.length === 2)
 
-console.log('7b. Crypto deposits')
+console.log('7b. Crypto deposits (Ethereum + Solana)')
 r = await req('/api/wallet/deposit/crypto', { method: 'POST', token, body: { amount: 500 } })
-check('create crypto deposit', r.status === 201 && r.data.deposit?.status === 'pending' && !!r.data.deposit?.address, JSON.stringify(r.data).slice(0, 160))
-const cryptoDepositId = r.data.deposit?.id ?? ''
+check('create ETH crypto deposit', r.status === 201 && r.data.deposit?.status === 'pending' && r.data.deposit?.network === 'Ethereum' && !!r.data.deposit?.address, JSON.stringify(r.data).slice(0, 160))
+const ethDepositId = r.data.deposit?.id ?? ''
+const ethDemo = r.data.deposit?.demo === true
+r = await req('/api/wallet/deposit/crypto', { method: 'POST', token, body: { amount: 100, network: 'Solana' } })
+check('create SOL crypto deposit', r.status === 201 && r.data.deposit?.network === 'Solana' && !!r.data.deposit?.address, JSON.stringify(r.data).slice(0, 160))
+const solDepositId = r.data.deposit?.id ?? ''
 r = await req('/api/wallet/deposits', { token })
-check('list crypto deposits', r.status === 200 && r.data.deposits?.length === 1)
+check('list crypto deposits (2)', r.status === 200 && r.data.deposits?.length === 2)
 r = await req('/api/wallet/deposit/crypto', { method: 'POST', token, body: { amount: -5 } })
 check('invalid crypto deposit rejected', r.status === 400)
-r = await req(`/api/wallet/deposits/${cryptoDepositId}/simulate-transfer`, { method: 'POST', token })
-check('simulate transfer → confirming', r.status === 200 && r.data.status === 'confirming')
-console.log('  waiting 35s for on-chain auto-confirm…')
-await new Promise((resolve) => setTimeout(resolve, 35000))
-r = await req('/api/wallet/deposits', { token })
-check('crypto deposit auto-confirmed', r.data.deposits?.[0]?.status === 'confirmed', JSON.stringify(r.data).slice(0, 160))
-r = await req('/api/wallet', { token })
-check('wallet credited after crypto confirm', r.data.balance === 3500, `balance=${r.data.balance}`)
+r = await req('/api/wallet/deposit/crypto', { method: 'POST', token, body: { amount: 10, network: 'Bitcoin' } })
+check('unsupported network rejected', r.status === 400)
+if (ethDemo) {
+  r = await req(`/api/wallet/deposits/${ethDepositId}/simulate-transfer`, { method: 'POST', token })
+  check('ETH simulate transfer → confirming', r.status === 200 && r.data.status === 'confirming')
+  r = await req(`/api/wallet/deposits/${solDepositId}/simulate-transfer`, { method: 'POST', token })
+  check('SOL simulate transfer → confirming', r.status === 200 && r.data.status === 'confirming')
+  console.log('  waiting 35s for on-chain auto-confirm…')
+  await new Promise((resolve) => setTimeout(resolve, 35000))
+  r = await req('/api/wallet/deposits', { token })
+  check('both deposits auto-confirmed', r.data.deposits?.every((d) => d.status === 'confirmed'), JSON.stringify(r.data).slice(0, 200))
+  r = await req('/api/wallet', { token })
+  check('wallet credited after crypto confirms', r.data.balance === 3600, `balance=${r.data.balance}`)
+} else {
+  console.log('  info  real on-chain mode — skipping simulated confirm checks')
+}
 
 console.log('8. Bots')
 r = await req('/api/bots', { method: 'POST', token, body: { symbol: 'BTCUSDT', strategy: 'momentum', capital: 1000 } })
@@ -215,7 +227,7 @@ console.log('9. Market data, portfolio, AI (waiting 14s…)')
 await new Promise((resolve) => setTimeout(resolve, 14000))
 
 r = await req('/api/portfolio', { token })
-check('GET /api/portfolio (balance 3500)', r.status === 200 && r.data.balance === 3500, JSON.stringify(r.data).slice(0, 160))
+check('GET /api/portfolio (balance 3600)', r.status === 200 && r.data.balance === 3600, JSON.stringify(r.data).slice(0, 160))
 
 r = await req('/api/bots', { token })
 const listed = r.data.bots?.[0]

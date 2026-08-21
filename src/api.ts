@@ -263,10 +263,10 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ amount }),
     }),
-  cryptoDeposit: (amount: number) =>
+  cryptoDeposit: (amount: number, network?: string) =>
     request<{ deposit: CryptoDeposit }>('/wallet/deposit/crypto', {
       method: 'POST',
-      body: JSON.stringify({ amount }),
+      body: JSON.stringify({ amount, network }),
     }),
   cryptoDeposits: () => request<{ deposits: CryptoDeposit[] }>('/wallet/deposits'),
   simulateCryptoTransfer: (id: string) =>

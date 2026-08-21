@@ -47,7 +47,7 @@ export async function initDb(): Promise<void> {
   })
 
   // Fail fast with a clear, credential-free diagnostic if the DB is
-  // unreachable (e.g. a mistyped DATABASE_URL on the host).
+  // unreachable — but retry first, since DNS can be transiently flaky.
   try {
     const parsed = new URL(url)
     console.log(
@@ -55,8 +55,24 @@ export async function initDb(): Promise<void> {
         process.env.DATABASE_URL ? 'DATABASE_URL' : 'embedded'
       })`,
     )
-    await pool.query('SELECT 1')
-    console.log('[db] connected')
+    let lastError: unknown
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        await pool.query('SELECT 1')
+        console.log('[db] connected')
+        return
+      } catch (err) {
+        lastError = err
+        if (attempt < 3) {
+          console.log(`[db] attempt ${attempt} failed — retrying…`)
+          await new Promise((r) => setTimeout(r, 2000))
+        }
+      }
+    }
+    throw new Error(
+      `Database unreachable after retries. Check the DATABASE_URL host in your environment. ` +
+        `${lastError instanceof Error ? lastError.message : String(lastError)}`,
+    )
   } catch (err) {
     throw new Error(
       `Database unreachable. Check the DATABASE_URL host in your environment. ` +

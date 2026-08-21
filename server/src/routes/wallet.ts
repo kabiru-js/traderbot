@@ -10,6 +10,8 @@ import {
   listCryptoDeposits,
   simulateCryptoTransfer,
   toPublicDeposit,
+  DEPOSIT_NETWORKS,
+  type DepositNetwork,
 } from '../cryptoDeposits'
 
 const r = Router()
@@ -109,8 +111,13 @@ r.post('/withdraw', async (req, res) => {
 r.post('/deposit/crypto', async (req, res) => {
   const u = requireUser(req)
   const amount = Number(req.body?.amount)
+  const network = (String(req.body?.network ?? 'Ethereum')) as DepositNetwork
   if (!Number.isFinite(amount) || amount <= 0 || amount > 100_000) {
     res.status(400).json({ error: 'Amount must be between $1 and $100,000' })
+    return
+  }
+  if (!DEPOSIT_NETWORKS.includes(network)) {
+    res.status(400).json({ error: 'Network must be Ethereum or Solana' })
     return
   }
   const open = await pool.query(
@@ -122,7 +129,7 @@ r.post('/deposit/crypto', async (req, res) => {
     res.status(400).json({ error: 'Too many pending deposits — confirm or cancel them first' })
     return
   }
-  const deposit = await createCryptoDeposit(u.id, Math.round(amount * 100) / 100)
+  const deposit = await createCryptoDeposit(u.id, Math.round(amount * 100) / 100, network)
   res.status(201).json({ deposit: toPublicDeposit(deposit) })
 })
 

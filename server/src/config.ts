@@ -22,8 +22,10 @@ export const config = {
   // Optional OpenAI-compatible provider for AI analysis.
   aiApiUrl: process.env.AI_API_URL || '',
   aiApiKey: process.env.AI_API_KEY || '',
-  // Crypto-native deposits: our USDC (Ethereum) receiving address + Etherscan key.
+  // Crypto-native deposits: platform receiving addresses + on-chain keys.
   // Without these, deposits run in demo mode (auto-confirmed after simulation).
-  platformDepositAddress: process.env.PLATFORM_DEPOSIT_ADDRESS || '',
+  platformDepositAddress: process.env.PLATFORM_DEPOSIT_ADDRESS || '', // USDC ERC-20 (Ethereum)
+  platformSolAddress: process.env.PLATFORM_SOL_ADDRESS || '', // USDC SPL (Solana)
   etherscanApiKey: process.env.ETHERSCAN_API_KEY || '',
+  solanaRpcUrl: process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com',
 }
