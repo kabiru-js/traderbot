@@ -79,16 +79,35 @@ r.post('/', async (req, res) => {
 r.post('/:id/start', async (req, res) => {
   const u = requireUser(req)
   const { rows } = await pool.query(
-    `UPDATE bots SET status = 'running', started_at = COALESCE(started_at, now())
-     WHERE id = $1 AND user_id = $2 RETURNING *`,
+    'SELECT * FROM bots WHERE id = $1 AND user_id = $2',
     [req.params.id, u.id],
   )
   if (!rows.length) {
     res.status(404).json({ error: 'Bot not found' })
     return
   }
-  await engine.startBot(rows[0])
-  res.json({ bot: enrichBot(rows[0]) })
+  const bot = rows[0]
+
+  // Users must fund their wallet before trading.
+  const wallet = await pool.query(
+    'SELECT balance_usd FROM wallets WHERE user_id = $1',
+    [u.id],
+  )
+  const balance = Number(wallet.rows[0]?.balance_usd ?? 0)
+  if (balance < Number(bot.capital)) {
+    res.status(400).json({
+      error: `Insufficient balance — add at least $${Number(bot.capital).toFixed(2)} to your wallet first`,
+    })
+    return
+  }
+
+  const updated = await pool.query(
+    `UPDATE bots SET status = 'running', started_at = COALESCE(started_at, now())
+     WHERE id = $1 AND user_id = $2 RETURNING *`,
+    [req.params.id, u.id],
+  )
+  await engine.startBot(updated.rows[0])
+  res.json({ bot: enrichBot(updated.rows[0]) })
 })
 
 r.post('/:id/stop', async (req, res) => {

@@ -11,7 +11,8 @@ import AIPage from './AIPage'
 import TransactionsPage from './TransactionsPage'
 import ReportsPage from './ReportsPage'
 import HelpPage from './HelpPage'
-import BotsTab from './BotsTab'
+import TradingPage from './TradingPage'
+import WalletTab from './WalletTab'
 import AlertsTab from './AlertsTab'
 import SettingsTab from './SettingsTab'
 import AdminTab from './AdminTab'
@@ -85,12 +86,13 @@ export default function AppArea({ onExit }: { onExit: () => void }) {
           onLogout={handleLogout}
         />
         <main style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 24px 60px' }}>
-          {page === 'overview' && <OverviewPage tick={live.tick} prices={live.prices} userName={user?.name ?? ''} />}
+          {page === 'overview' && <OverviewPage tick={live.tick} prices={live.prices} userName={user?.name ?? ''} onAddFunds={() => navigate('wallet')} />}
           {page === 'portfolio' && <PortfolioPage tick={live.tick} prices={live.prices} />}
+          {page === 'wallet' && <WalletTab tick={live.tick} />}
           {page === 'assets' && <AssetsPage tick={live.tick} prices={live.prices} search={search} />}
           {page === 'markets' && <MarketsPage tick={live.tick} prices={live.prices} search={search} />}
           {page === 'ai' && <AIPage tick={live.tick} />}
-          {page === 'strategies' && <BotsTab tick={live.tick} prices={live.prices} />}
+          {page === 'strategies' && <TradingPage tick={live.tick} prices={live.prices} onAddFunds={() => navigate('wallet')} />}
           {page === 'exchanges' && (
             <>
               <PageTitle

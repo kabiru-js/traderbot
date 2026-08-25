@@ -161,6 +161,15 @@ export interface Market {
   history: number[]
 }
 
+export interface Candle {
+  time: number
+  open: number
+  high: number
+  low: number
+  close: number
+  volume: number
+}
+
 export interface MarketAnalysis {
   signal: string
   score: number
@@ -282,6 +291,10 @@ export const api = {
 
   // markets + AI
   markets: () => request<{ markets: Market[] }>('/markets'),
+  candles: (symbol: string, interval: string) =>
+    request<{ candles: Candle[]; simulated: boolean }>(
+      `/markets/${encodeURIComponent(symbol)}/candles?interval=${encodeURIComponent(interval)}`,
+    ),
   aiAnalysis: (symbol: string) =>
     request<{ symbol: string; analysis: MarketAnalysis }>(`/ai/analysis?symbol=${encodeURIComponent(symbol)}`),
   aiPortfolio: () => request<{ analysis: PortfolioAnalysis }>('/ai/portfolio'),

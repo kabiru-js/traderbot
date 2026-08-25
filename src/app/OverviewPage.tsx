@@ -41,10 +41,12 @@ export default function OverviewPage({
   tick,
   prices,
   userName,
+  onAddFunds,
 }: {
   tick: number
   prices: Record<string, number>
   userName: string
+  onAddFunds?: () => void
 }) {
   const portfolio = useFetch<Portfolio>(() => api.portfolio(), [tick])
   const wallet = useFetch<Wallet>(() => api.wallet(), [tick])
@@ -143,6 +145,45 @@ export default function OverviewPage({
           Here's what's happening with your portfolio today.
         </p>
       </div>
+
+      {/* Empty wallet CTA */}
+      {balance <= 0 && onAddFunds && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 16,
+            flexWrap: 'wrap',
+            background: 'linear-gradient(135deg, rgba(14,165,233,0.08), rgba(139,92,246,0.08))',
+            border: '1px solid rgba(14,165,233,0.25)',
+            borderRadius: 12,
+            padding: '14px 18px',
+            marginBottom: 20,
+          }}
+        >
+          <div style={{ flex: 1, minWidth: 220 }}>
+            <p style={{ color: '#F0F4FF', fontSize: 14, fontWeight: 700 }}>Your wallet is empty</p>
+            <p style={{ color: '#64748B', fontSize: 13, marginTop: 2 }}>
+              Add funds to start trading — the AI will trade the market for you.
+            </p>
+          </div>
+          <button
+            onClick={onAddFunds}
+            style={{
+              background: 'linear-gradient(135deg, #0EA5E9, #8B5CF6)',
+              border: 'none',
+              color: '#fff',
+              padding: '10px 20px',
+              borderRadius: 9,
+              cursor: 'pointer',
+              fontSize: 13,
+              fontWeight: 600,
+            }}
+          >
+            Add money →
+          </button>
+        </div>
+      )}
 
       {/* Portfolio hero card */}
       <Card

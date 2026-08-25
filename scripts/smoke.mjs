@@ -223,6 +223,17 @@ check('unsupported symbol rejected', r.status === 400)
 r = await req(`/api/bots/${botId}/start`, { method: 'POST', token })
 check('POST /api/bots/:id/start', r.status === 200 && r.data.bot?.status === 'running')
 
+// Users must fund their wallet before trading.
+r = await req('/api/auth/signup', {
+  method: 'POST',
+  body: { email: `poor-${Date.now()}@example.com`, password: 'password123', name: 'Poor User' },
+})
+const poorToken = r.data.token
+r = await req('/api/bots', { method: 'POST', token: poorToken, body: { symbol: 'BTCUSDT', strategy: 'momentum', capital: 1000 } })
+const poorBotId = r.data.bot?.id
+r = await req(`/api/bots/${poorBotId}/start`, { method: 'POST', token: poorToken })
+check('cannot start bot without funds', r.status === 400, JSON.stringify(r.data))
+
 console.log('9. Market data, portfolio, AI (waiting 14s…)')
 await new Promise((resolve) => setTimeout(resolve, 14000))
 

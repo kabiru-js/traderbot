@@ -2,12 +2,12 @@ import type { ReactNode } from 'react'
 import {
   ArrowLeftRight,
   Bell,
-  Bot,
   CandlestickChart,
   Coins,
   FileText,
   LayoutDashboard,
   LifeBuoy,
+  PieChart,
   Plug,
   Search,
   Settings,
@@ -19,6 +19,7 @@ import {
 export type PageId =
   | 'overview'
   | 'portfolio'
+  | 'wallet'
   | 'assets'
   | 'markets'
   | 'ai'
@@ -39,11 +40,12 @@ interface NavItem {
 
 const MAIN_NAV: NavItem[] = [
   { id: 'overview', label: 'Overview', icon: <LayoutDashboard size={17} /> },
-  { id: 'portfolio', label: 'Portfolio', icon: <Wallet size={17} /> },
+  { id: 'portfolio', label: 'Portfolio', icon: <PieChart size={17} /> },
+  { id: 'wallet', label: 'Wallet', icon: <Wallet size={17} /> },
   { id: 'assets', label: 'Assets', icon: <Coins size={17} /> },
   { id: 'markets', label: 'Markets', icon: <CandlestickChart size={17} /> },
   { id: 'ai', label: 'AI Intelligence', icon: <Sparkles size={17} /> },
-  { id: 'strategies', label: 'Strategies', icon: <Bot size={17} /> },
+  { id: 'strategies', label: 'Trading', icon: <CandlestickChart size={17} /> },
   { id: 'exchanges', label: 'Exchanges', icon: <Plug size={17} /> },
   { id: 'transactions', label: 'Transactions', icon: <ArrowLeftRight size={17} /> },
   { id: 'alerts', label: 'Alerts', icon: <Bell size={17} /> },
@@ -58,10 +60,11 @@ const BOTTOM_NAV: NavItem[] = [
 const PAGE_TITLES: Record<PageId, { title: string; sub: string }> = {
   overview: { title: 'Overview', sub: 'Your portfolio at a glance' },
   portfolio: { title: 'Portfolio', sub: 'Allocation, positions, and performance' },
+  wallet: { title: 'Wallet', sub: 'Deposit funds and track your balance' },
   assets: { title: 'Assets', sub: 'Monitor and manage your holdings' },
   markets: { title: 'Markets', sub: 'Live prices and market context' },
   ai: { title: 'AI Intelligence', sub: 'Analysis, risk, and recommendations' },
-  strategies: { title: 'Strategy Center', sub: 'Deploy and manage trading bots' },
+  strategies: { title: 'Trading', sub: 'Live charts and automated trading' },
   exchanges: { title: 'Exchange Connections', sub: 'Secure API connections' },
   transactions: { title: 'Transactions', sub: 'Complete account history' },
   alerts: { title: 'Alerts', sub: 'Price alerts and notifications' },
