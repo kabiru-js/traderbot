@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { pool } from '../db'
 import { authMiddleware, requireUser } from '../auth'
 import { engine } from '../trading/engine'
+import { getActiveMode } from '../mode'
 
 const r = Router()
 r.use(authMiddleware)
@@ -39,24 +40,25 @@ function asPosition(bot: {
 
 r.get('/', async (req, res) => {
   const u = requireUser(req)
+  const mode = await getActiveMode(u.id)
 
   const wallet = await pool.query(
-    'SELECT balance_usd FROM wallets WHERE user_id = $1',
-    [u.id],
+    'SELECT balance_usd FROM wallets WHERE user_id = $1 AND mode = $2',
+    [u.id, mode],
   )
   const bots = await pool.query(
-    'SELECT * FROM bots WHERE user_id = $1 ORDER BY created_at DESC',
-    [u.id],
+    'SELECT * FROM bots WHERE user_id = $1 AND mode = $2 ORDER BY created_at DESC',
+    [u.id, mode],
   )
   const trades = await pool.query(
     `SELECT t.id, t.side, t.price, t.qty, t.pnl_usd, t.fee, t.created_at, b.symbol
      FROM trades t JOIN bots b ON b.id = t.bot_id
-     WHERE t.user_id = $1 ORDER BY t.created_at DESC LIMIT 20`,
-    [u.id],
+     WHERE t.user_id = $1 AND b.mode = $2 ORDER BY t.created_at DESC LIMIT 20`,
+    [u.id, mode],
   )
   const tx = await pool.query(
-    'SELECT type, amount, created_at FROM transactions WHERE user_id = $1 ORDER BY created_at ASC',
-    [u.id],
+    'SELECT type, amount, created_at FROM transactions WHERE user_id = $1 AND mode = $2 ORDER BY created_at ASC',
+    [u.id, mode],
   )
 
   // Build the equity curve from the transaction ledger.
@@ -77,6 +79,7 @@ r.get('/', async (req, res) => {
 
   res.json({
     balance: Number(wallet.rows[0]?.balance_usd ?? 0),
+    mode,
     totalPnl: round(realized + unrealized),
     equity,
     openPositions,

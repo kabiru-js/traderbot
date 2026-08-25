@@ -76,7 +76,10 @@ r.post('/signup', async (req, res) => {
      VALUES ($1, $2, $3, $4, $5) RETURNING id, email, name, role, username`,
     [email.toLowerCase(), passwordHash, displayName, role, username || null],
   )
-  await pool.query('INSERT INTO wallets (user_id) VALUES ($1)', [rows[0].id])
+  await pool.query('INSERT INTO wallets (user_id, mode) VALUES ($1, $2)', [
+    rows[0].id,
+    'live',
+  ])
 
   // Email verification flow.
   const token = await createAuthToken(rows[0].id, 'email_verify', 24 * 60)
@@ -260,7 +263,10 @@ r.post('/demo', async (_req, res) => {
      RETURNING id, email, name, role`,
     [email, passwordHash],
   )
-  await pool.query('INSERT INTO wallets (user_id) VALUES ($1)', [rows[0].id])
+  await pool.query('INSERT INTO wallets (user_id, mode) VALUES ($1, $2)', [
+    rows[0].id,
+    'live',
+  ])
 
   // Seed mock funds so demo users can trade immediately.
   await pool.query(

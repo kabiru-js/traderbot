@@ -63,6 +63,7 @@ export interface Profile {
   name: string
   role: string
   demo: boolean
+  mode: string
   emailVerified: boolean
   twoFactorEnabled: boolean
   createdAt: string
@@ -262,6 +263,11 @@ export const api = {
       '/profile',
       { method: 'PATCH', body: JSON.stringify({ name, username }) },
     ),
+  setMode: (mode: string) =>
+    request<{ profile: { mode: string } }>('/profile/mode', {
+      method: 'POST',
+      body: JSON.stringify({ mode }),
+    }),
 
   // wallet
   wallet: () => request<Wallet>('/wallet'),

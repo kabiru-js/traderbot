@@ -13,7 +13,13 @@ import {
 } from './ui'
 import ExchangeConnections from './ExchangeConnections'
 
-export default function SettingsTab({ tick }: { tick: number }) {
+export default function SettingsTab({
+  tick,
+  onModeChanged,
+}: {
+  tick: number
+  onModeChanged?: () => void
+}) {
   const profile = useFetch<{ profile: Profile }>(() => api.profile(), [tick])
 
   const [name, setName] = useState('')
@@ -96,6 +102,24 @@ export default function SettingsTab({ tick }: { tick: number }) {
     }
   }
 
+  const [modeBusy, setModeBusy] = useState(false)
+
+  const toggleMode = async () => {
+    setError(null)
+    setModeBusy(true)
+    try {
+      const next = p?.mode === 'testnet' ? 'live' : 'testnet'
+      await api.setMode(next)
+      onModeChanged?.()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Request failed')
+    } finally {
+      setModeBusy(false)
+    }
+  }
+
+  const isTestnet = p?.mode === 'testnet'
+
   return (
     <div>
       <PageTitle
@@ -107,6 +131,44 @@ export default function SettingsTab({ tick }: { tick: number }) {
         sub="Manage your profile, two-factor authentication, and exchange connections."
       />
       {error && <ErrorBox message={error} />}
+
+      {/* Testnet toggle */}
+      <Card
+        style={{
+          marginBottom: 20,
+          border: isTestnet ? '1px solid rgba(139,92,246,0.25)' : '1px solid rgba(255,255,255,0.08)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: 220 }}>
+            <p style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#F0F4FF', fontSize: 14, fontWeight: 700 }}>
+              Testnet Mode
+              {isTestnet && <Badge color="#8B5CF6">ACTIVE</Badge>}
+            </p>
+            <p style={{ color: '#64748B', fontSize: 13, marginTop: 4 }}>
+              {isTestnet
+                ? 'You are on the testnet — mock money, real market data. Toggle off to return to your live wallet.'
+                : 'Switch to a testnet wallet with mock funds to practice trading without risking real money.'}
+            </p>
+          </div>
+          <button
+            onClick={toggleMode}
+            disabled={modeBusy}
+            style={{
+              background: isTestnet ? 'rgba(239,68,68,0.1)' : 'linear-gradient(135deg, #0EA5E9, #8B5CF6)',
+              border: isTestnet ? '1px solid rgba(239,68,68,0.35)' : 'none',
+              color: isTestnet ? '#EF4444' : '#fff',
+              padding: '10px 18px',
+              borderRadius: 9,
+              cursor: modeBusy ? 'wait' : 'pointer',
+              fontSize: 13,
+              fontWeight: 600,
+            }}
+          >
+            {modeBusy ? 'Switching…' : isTestnet ? 'Exit Testnet' : 'Enable Testnet'}
+          </button>
+        </div>
+      </Card>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }} className="hero-grid">
         {/* Profile */}

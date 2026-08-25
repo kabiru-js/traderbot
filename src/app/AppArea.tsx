@@ -51,9 +51,14 @@ export default function AppArea({ onExit }: { onExit: () => void }) {
   const { user, logout } = useAuth()
   const [page, setPage] = useState<PageId>('overview')
   const [search, setSearch] = useState('')
+  const [modeVersion, setModeVersion] = useState(0)
   const live = useLive()
   const health = useFetch<{ status: string; demoMode: boolean; marketFeed: string }>(() => api.health(), [])
   const notif = useFetch<{ unread: number }>(() => api.notifications(), [live.tick])
+  const profile = useFetch<{ profile: { mode: string } }>(() => api.profile(), [live.tick, modeVersion])
+
+  const mode = profile.data?.profile.mode ?? 'live'
+  const isTestnet = mode === 'testnet'
 
   const handleLogout = () => {
     disconnectSocket()
@@ -83,13 +88,14 @@ export default function AppArea({ onExit }: { onExit: () => void }) {
           unread={notif.data?.unread ?? 0}
           userName={user?.name ?? user?.username ?? ''}
           isDemo={user?.isDemo}
+          isTestnet={isTestnet}
           onNotifications={() => navigate('alerts')}
           onLogout={handleLogout}
         />
-        <main style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 24px 60px' }}>
+        <main key={mode} style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 24px 60px' }}>
           {page === 'overview' && <OverviewPage tick={live.tick} prices={live.prices} userName={user?.name ?? ''} onAddFunds={() => navigate('wallet')} />}
           {page === 'portfolio' && <PortfolioPage tick={live.tick} prices={live.prices} />}
-          {page === 'wallet' && <WalletTab tick={live.tick} />}
+          {page === 'wallet' && <WalletTab tick={live.tick} testnet={isTestnet} />}
           {page === 'assets' && <AssetsPage tick={live.tick} prices={live.prices} search={search} />}
           {page === 'markets' && <MarketsPage tick={live.tick} prices={live.prices} search={search} />}
           {page === 'ai' && <AIPage tick={live.tick} />}
@@ -112,7 +118,7 @@ export default function AppArea({ onExit }: { onExit: () => void }) {
           {page === 'transactions' && <TransactionsPage tick={live.tick} search={search} />}
           {page === 'alerts' && <AlertsTab tick={live.tick} />}
           {page === 'reports' && <ReportsPage tick={live.tick} />}
-          {page === 'settings' && <SettingsTab tick={live.tick} />}
+          {page === 'settings' && <SettingsTab tick={live.tick} onModeChanged={() => setModeVersion((v) => v + 1)} />}
           {page === 'help' && <HelpPage />}
           {page === 'admin' && <AdminTab tick={live.tick} />}
         </main>

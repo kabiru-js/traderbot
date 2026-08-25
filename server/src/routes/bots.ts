@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { pool } from '../db'
 import { authMiddleware, requireUser } from '../auth'
 import { engine } from '../trading/engine'
+import { getActiveMode } from '../mode'
 
 const r = Router()
 r.use(authMiddleware)
@@ -43,11 +44,12 @@ function enrichBot(bot: {
 
 r.get('/', async (req, res) => {
   const u = requireUser(req)
+  const mode = await getActiveMode(u.id)
   const { rows } = await pool.query(
-    'SELECT * FROM bots WHERE user_id = $1 ORDER BY created_at DESC',
-    [u.id],
+    'SELECT * FROM bots WHERE user_id = $1 AND mode = $2 ORDER BY created_at DESC',
+    [u.id, mode],
   )
-  res.json({ bots: rows.map(enrichBot) })
+  res.json({ bots: rows.map(enrichBot), mode })
 })
 
 r.post('/', async (req, res) => {
@@ -70,8 +72,8 @@ r.post('/', async (req, res) => {
   }
 
   const { rows } = await pool.query(
-    'INSERT INTO bots (user_id, symbol, strategy, capital) VALUES ($1, $2, $3, $4) RETURNING *',
-    [u.id, symbol, strategy, capital],
+    'INSERT INTO bots (user_id, symbol, strategy, capital, mode) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+    [u.id, symbol, strategy, capital, await getActiveMode(u.id)],
   )
   res.status(201).json({ bot: enrichBot(rows[0]) })
 })
@@ -90,8 +92,8 @@ r.post('/:id/start', async (req, res) => {
 
   // Users must fund their wallet before trading.
   const wallet = await pool.query(
-    'SELECT balance_usd FROM wallets WHERE user_id = $1',
-    [u.id],
+    'SELECT balance_usd FROM wallets WHERE user_id = $1 AND mode = $2',
+    [u.id, bot.mode ?? 'live'],
   )
   const balance = Number(wallet.rows[0]?.balance_usd ?? 0)
   if (balance < Number(bot.capital)) {

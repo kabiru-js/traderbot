@@ -212,6 +212,7 @@ export function TopBar({
   unread,
   userName,
   isDemo,
+  isTestnet,
   onNotifications,
   onLogout,
 }: {
@@ -222,6 +223,7 @@ export function TopBar({
   unread: number
   userName: string
   isDemo?: boolean
+  isTestnet?: boolean
   onNotifications: () => void
   onLogout: () => void
 }) {
@@ -290,6 +292,22 @@ export function TopBar({
               }}
             >
               DEMO
+            </span>
+          )}
+          {isTestnet && !isDemo && (
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 800,
+                letterSpacing: '0.08em',
+                color: '#8B5CF6',
+                background: 'rgba(139,92,246,0.12)',
+                border: '1px solid rgba(139,92,246,0.3)',
+                borderRadius: 6,
+                padding: '3px 8px',
+              }}
+            >
+              TESTNET
             </span>
           )}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>

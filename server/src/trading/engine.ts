@@ -23,6 +23,7 @@ interface BotState {
   symbol: string
   strategy: string
   capital: number
+  mode: string
   window: number[]
   lastTradeAt: number
   busy: boolean
@@ -129,6 +130,7 @@ export class TradingEngine {
       symbol: row.symbol,
       strategy: row.strategy,
       capital: Number(row.capital),
+      mode: (row as BotRow & { mode?: string }).mode ?? 'live',
       window: [],
       lastTradeAt: 0,
       busy: false,
@@ -256,12 +258,12 @@ export class TradingEngine {
         [state.id, state.userId, side === 'LONG' ? 'SELL' : 'BUY', exitFill, qty, pnl, exitFee],
       )
       await c.query(
-        'UPDATE wallets SET balance_usd = balance_usd + $1, updated_at = now() WHERE user_id = $2',
-        [pnl, state.userId],
+        'UPDATE wallets SET balance_usd = balance_usd + $1, updated_at = now() WHERE user_id = $2 AND mode = $3',
+        [pnl, state.userId, state.mode],
       )
       await c.query(
-        'INSERT INTO transactions (user_id, type, amount, reference) VALUES ($1, $2, $3, $4)',
-        [state.userId, 'trade', pnl, `bot:${state.id}`],
+        'INSERT INTO transactions (user_id, type, amount, reference, mode) VALUES ($1, $2, $3, $4, $5)',
+        [state.userId, 'trade', pnl, `bot:${state.id}`, state.mode],
       )
     })
 
@@ -287,8 +289,8 @@ export class TradingEngine {
     })
 
     const { rows } = await pool.query(
-      'SELECT balance_usd FROM wallets WHERE user_id = $1',
-      [state.userId],
+      'SELECT balance_usd FROM wallets WHERE user_id = $1 AND mode = $2',
+      [state.userId, state.mode],
     )
     emitToUser(state.userId, 'wallet:update', {
       balance: Number(rows[0]?.balance_usd ?? 0),

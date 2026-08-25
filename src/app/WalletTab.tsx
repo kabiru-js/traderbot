@@ -14,7 +14,7 @@ import {
 } from './ui'
 import CryptoDepositCard from './CryptoDepositCard'
 
-export default function WalletTab({ tick }: { tick: number }) {
+export default function WalletTab({ tick, testnet = false }: { tick: number; testnet?: boolean }) {
   const { data, error, loading, refresh } = useFetch<Wallet>(() => api.wallet(), [tick])
   const [amount, setAmount] = useState('1000')
   const [busy, setBusy] = useState(false)
@@ -80,7 +80,19 @@ export default function WalletTab({ tick }: { tick: number }) {
         </Card>
       </div>
 
-      <CryptoDepositCard tick={tick} />
+      {testnet ? (
+        <Card style={{ marginTop: 20 }}>
+          <p style={{ color: '#F0F4FF', fontSize: 14, fontWeight: 600, marginBottom: 4 }}>
+            Testnet Mode
+          </p>
+          <p style={{ color: '#64748B', fontSize: 13 }}>
+            You're on the testnet — all funds are mock. Use the <b>Add money</b> flow above to
+            credit your testnet wallet instantly. Crypto deposits are for live wallets only.
+          </p>
+        </Card>
+      ) : (
+        <CryptoDepositCard tick={tick} />
+      )}
 
       <Card style={{ marginTop: 20 }}>
         <p style={{ color: '#F0F4FF', fontSize: 14, fontWeight: 600, marginBottom: 14 }}>

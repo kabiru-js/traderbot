@@ -5,6 +5,7 @@ import { config } from '../config'
 import { creditDeposit } from '../walletService'
 import { notifyUser } from '../notify'
 import { emitToUser } from '../realtime'
+import { getActiveMode } from '../mode'
 import {
   createCryptoDeposit,
   listCryptoDeposits,
@@ -19,17 +20,19 @@ r.use(authMiddleware)
 
 r.get('/', async (req, res) => {
   const u = requireUser(req)
+  const mode = await getActiveMode(u.id)
   const balance = await pool.query(
-    'SELECT balance_usd FROM wallets WHERE user_id = $1',
-    [u.id],
+    'SELECT balance_usd FROM wallets WHERE user_id = $1 AND mode = $2',
+    [u.id, mode],
   )
   const tx = await pool.query(
     `SELECT id, type, amount, reference, created_at
-     FROM transactions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 100`,
-    [u.id],
+     FROM transactions WHERE user_id = $1 AND mode = $2 ORDER BY created_at DESC LIMIT 100`,
+    [u.id, mode],
   )
   res.json({
     balance: Number(balance.rows[0]?.balance_usd ?? 0),
+    mode,
     transactions: tx.rows.map((row) => ({ ...row, amount: Number(row.amount) })),
   })
 })
@@ -43,8 +46,9 @@ r.post('/deposit', async (req, res) => {
   }
 
   if (config.demoMode) {
-    const balance = await creditDeposit(u.id, Math.round(amount * 100) / 100, 'demo-deposit')
-    res.json({ balance, reference: 'demo-deposit' })
+    const mode = await getActiveMode(u.id)
+    const balance = await creditDeposit(u.id, Math.round(amount * 100) / 100, 'demo-deposit', mode)
+    res.json({ balance, reference: 'demo-deposit', mode })
     return
   }
 
@@ -68,10 +72,11 @@ r.post('/withdraw', async (req, res) => {
     res.status(400).json({ error: 'Amount must be between $1 and $100,000' })
     return
   }
+  const mode = await getActiveMode(u.id)
 
   const balanceRes = await pool.query(
-    'SELECT balance_usd FROM wallets WHERE user_id = $1',
-    [u.id],
+    'SELECT balance_usd FROM wallets WHERE user_id = $1 AND mode = $2',
+    [u.id, mode],
   )
   const balance = Number(balanceRes.rows[0]?.balance_usd ?? 0)
   if (amount > balance) {
@@ -79,21 +84,19 @@ r.post('/withdraw', async (req, res) => {
     return
   }
 
-  // Demo mode processes withdrawals instantly. With real payment rails
-  // (Stripe Payouts etc.) this becomes a queued approval flow.
   await withTx(async (c) => {
     await c.query(
-      'UPDATE wallets SET balance_usd = balance_usd - $1, updated_at = now() WHERE user_id = $2',
-      [amount, u.id],
+      'UPDATE wallets SET balance_usd = balance_usd - $1, updated_at = now() WHERE user_id = $2 AND mode = $3',
+      [amount, u.id, mode],
     )
     await c.query(
-      'INSERT INTO transactions (user_id, type, amount, reference) VALUES ($1, $2, $3, $4)',
-      [u.id, 'withdraw', -amount, 'demo-withdraw'],
+      'INSERT INTO transactions (user_id, type, amount, reference, mode) VALUES ($1, $2, $3, $4, $5)',
+      [u.id, 'withdraw', -amount, 'demo-withdraw', mode],
     )
   })
   const updated = await pool.query(
-    'SELECT balance_usd FROM wallets WHERE user_id = $1',
-    [u.id],
+    'SELECT balance_usd FROM wallets WHERE user_id = $1 AND mode = $2',
+    [u.id, mode],
   )
   const newBalance = Number(updated.rows[0]?.balance_usd ?? 0)
   emitToUser(u.id, 'wallet:update', { balance: newBalance })
@@ -101,17 +104,17 @@ r.post('/withdraw', async (req, res) => {
     u.id,
     'security',
     'Withdrawal processed',
-    `$${amount.toFixed(2)} was withdrawn from your wallet.`,
+    `$${amount.toFixed(2)} was withdrawn from your ${mode} wallet.`,
   )
-  res.json({ balance: newBalance, reference: 'demo-withdraw' })
+  res.json({ balance: newBalance, reference: 'demo-withdraw', mode })
 })
 
-// ── Crypto-native deposits (USDC on Ethereum) ────────────────────
+// ── Crypto-native deposits (USDC on Ethereum / Solana — live wallet) ──
 
 r.post('/deposit/crypto', async (req, res) => {
   const u = requireUser(req)
   const amount = Number(req.body?.amount)
-  const network = (String(req.body?.network ?? 'Ethereum')) as DepositNetwork
+  const network = String(req.body?.network ?? 'Ethereum') as DepositNetwork
   if (!Number.isFinite(amount) || amount <= 0 || amount > 100_000) {
     res.status(400).json({ error: 'Amount must be between $1 and $100,000' })
     return

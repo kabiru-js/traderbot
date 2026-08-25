@@ -19,10 +19,10 @@ r.use(adminOnly)
 r.get('/users', async (_req, res) => {
   const { rows } = await pool.query(
     `SELECT u.id, u.email, u.name, u.role, u.created_at, u.email_verified_at,
-            u.two_factor_enabled, w.balance_usd,
+            u.two_factor_enabled, u.mode, w.balance_usd,
             (SELECT count(*)::int FROM bots b WHERE b.user_id = u.id) AS bot_count,
             (SELECT count(*)::int FROM trades t WHERE t.user_id = u.id) AS trade_count
-     FROM users u LEFT JOIN wallets w ON w.user_id = u.id
+     FROM users u LEFT JOIN wallets w ON w.user_id = u.id AND w.mode = 'live'
      ORDER BY u.created_at DESC LIMIT 100`,
   )
   res.json({
@@ -37,7 +37,7 @@ r.get('/stats', async (_req, res) => {
   const [users, activeBots, aum, deposits, withdrawals, trades] = await Promise.all([
     pool.query('SELECT count(*)::int AS n FROM users'),
     pool.query("SELECT count(*)::int AS n FROM bots WHERE status = 'running'"),
-    pool.query('SELECT COALESCE(sum(balance_usd), 0)::float AS n FROM wallets'),
+    pool.query('SELECT COALESCE(sum(balance_usd), 0)::float AS n FROM wallets WHERE mode = $1', ['live']),
     pool.query("SELECT COALESCE(sum(amount), 0)::float AS n FROM transactions WHERE type = 'deposit'"),
     pool.query("SELECT COALESCE(sum(abs(amount)), 0)::float AS n FROM transactions WHERE type = 'withdraw'"),
     pool.query('SELECT count(*)::int AS n FROM trades'),

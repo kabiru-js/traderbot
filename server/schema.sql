@@ -117,6 +117,16 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username
 -- One-click demo/testnet accounts (mock money, flagged)
 ALTER TABLE users ADD COLUMN IF NOT EXISTS is_demo BOOLEAN NOT NULL DEFAULT false;
 
+-- Testnet toggle: per-mode wallets, transactions and bots, so mock money
+-- never mixes with real funds.
+ALTER TABLE wallets DROP CONSTRAINT IF EXISTS wallets_pkey;
+ALTER TABLE wallets ADD COLUMN IF NOT EXISTS mode TEXT NOT NULL DEFAULT 'live';
+CREATE UNIQUE INDEX IF NOT EXISTS wallets_user_mode_key ON wallets (user_id, mode);
+ALTER TABLE transactions ADD COLUMN IF NOT EXISTS mode TEXT NOT NULL DEFAULT 'live';
+CREATE INDEX IF NOT EXISTS idx_transactions_user_mode ON transactions (user_id, mode, created_at DESC);
+ALTER TABLE bots ADD COLUMN IF NOT EXISTS mode TEXT NOT NULL DEFAULT 'live';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS mode TEXT NOT NULL DEFAULT 'live';
+
 -- Realistic paper execution: per-fill taker fee (USD)
 ALTER TABLE trades ADD COLUMN IF NOT EXISTS fee NUMERIC(18, 2) NOT NULL DEFAULT 0;
 

@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { pool } from '../db'
 import { authMiddleware, requireUser } from '../auth'
+import { getActiveMode, type AccountMode } from '../mode'
 
 const r = Router()
 r.use(authMiddleware)
@@ -10,7 +11,7 @@ const USERNAME_RE = /^[a-z0-9_]{3,30}$/
 r.get('/', async (req, res) => {
   const u = requireUser(req)
   const { rows } = await pool.query(
-    `SELECT id, email, username, name, role, is_demo, email_verified_at, two_factor_enabled, created_at
+    `SELECT id, email, username, name, role, is_demo, mode, email_verified_at, two_factor_enabled, created_at
      FROM users WHERE id = $1`,
     [u.id],
   )
@@ -27,6 +28,7 @@ r.get('/', async (req, res) => {
       name: row.name,
       role: row.role,
       demo: !!row.is_demo,
+      mode: row.mode ?? 'live',
       emailVerified: !!row.email_verified_at,
       twoFactorEnabled: row.two_factor_enabled,
       createdAt: row.created_at,
@@ -79,6 +81,25 @@ r.patch('/', async (req, res) => {
     [u.id],
   )
   res.json({ profile: rows[0] })
+})
+
+// ── Testnet toggle ────────────────────────────────────────────────
+r.post('/mode', async (req, res) => {
+  const u = requireUser(req)
+  const mode = String(req.body?.mode ?? '') as AccountMode
+  if (mode !== 'live' && mode !== 'testnet') {
+    res.status(400).json({ error: 'Mode must be live or testnet' })
+    return
+  }
+  // Ensure a wallet exists for the target mode (testnet wallets start at 0).
+  await pool.query(
+    `INSERT INTO wallets (user_id, mode) VALUES ($1, $2)
+     ON CONFLICT (user_id, mode) DO NOTHING`,
+    [u.id, mode],
+  )
+  await pool.query('UPDATE users SET mode = $1 WHERE id = $2', [mode, u.id])
+  const modeNow = await getActiveMode(u.id)
+  res.json({ profile: { mode: modeNow } })
 })
 
 export default r
