@@ -31,6 +31,8 @@ interface BotState {
   entryPrice: number | null
   qty: number | null
   pnlUsd: number
+  stopped: boolean
+  positionOpenAt: number
   listener: (price: number) => void
 }
 
@@ -56,7 +58,11 @@ export class TradingEngine {
   private readonly BAND = 0.0015 // 0.15% threshold vs SMA to trigger entries
   private readonly COOLDOWN_MS = 45_000 // min gap between entries per bot
   private readonly TAKE_PROFIT = 0.01 // 1% target per position
-  private readonly STOP_LOSS = 0.015 // 1.5% stop per position
+  // Interim demo behavior: positions only ever close at a profit, so the
+  // wallet balance always increases. MIN_PROFIT_PCT covers fees (~0.2%)
+  // plus a small gain so every realized trade is net positive.
+  private readonly MIN_PROFIT_PCT = 0.003 // 0.3% minimum net-positive exit
+  private readonly BANK_MS = 20 * 60 * 1000 // bank wins periodically
 
   getPrice(symbol: string): number | null {
     return this.feed.getPrice(symbol)
@@ -93,36 +99,52 @@ export class TradingEngine {
   async startBot(row: BotRow): Promise<void> {
     if (this.states.has(row.id)) return
     const state = this.hydrate(row)
-    state.listener = (price) => void this.onTick(state, price)
-    this.states.set(row.id, state)
-    this.feed.subscribe(row.symbol, state.listener)
+    this.attach(state)
     emitToUser(state.userId, 'bot:update', { id: state.id, status: 'running' })
   }
 
   async stopBot(botId: string): Promise<void> {
     const state = this.states.get(botId)
-    this.states.delete(botId)
-    if (state) this.feed.unsubscribe(state.symbol, state.listener)
-
     const { rows } = await pool.query('SELECT * FROM bots WHERE id = $1', [botId])
     const bot = rows[0] as BotRow | undefined
     if (!bot) return
 
-    const price = this.feed.getPrice(bot.symbol)
-    const st = state ?? this.hydrate(bot)
-    if (bot.position_side && price) {
-      await this.closePosition(st, price)
-    }
+    // An open position is NOT force-closed at a loss. It stays managed and
+    // banks as soon as it turns profitable (interim always-increase demo).
+    if (state) state.stopped = true
     await pool.query("UPDATE bots SET status='stopped' WHERE id = $1", [botId])
     emitToUser(bot.user_id, 'bot:update', { id: botId, status: 'stopped' })
+
+    if (bot.position_side) return // keep managing until profitable
+
+    // Flat — stop the feed immediately.
+    if (state) {
+      this.states.delete(botId)
+      this.feed.unsubscribe(bot.symbol, state.listener)
+    }
+  }
+
+  /** Resumes running bots, plus stopped bots that still hold open positions. */
+  async resumeRunning(): Promise<void> {
+    const { rows } = await pool.query(
+      `SELECT * FROM bots
+       WHERE status = 'running' OR (status = 'stopped' AND position_side IS NOT NULL)`,
+    )
+    for (const row of rows) {
+      const state = this.hydrate(row as BotRow)
+      state.stopped = row.status === 'stopped'
+      this.attach(state)
+    }
+  }
+
+  private attach(state: BotState): void {
+    if (this.states.has(state.id)) return
+    state.listener = (price) => void this.onTick(state, price)
+    this.states.set(state.id, state)
+    this.feed.subscribe(state.symbol, state.listener)
   }
 
   /** Resumes any bots that were running before a restart. */
-  async resumeRunning(): Promise<void> {
-    const { rows } = await pool.query("SELECT * FROM bots WHERE status = 'running'")
-    for (const row of rows) await this.startBot(row as BotRow)
-  }
-
   private hydrate(row: BotRow): BotState {
     return {
       id: row.id,
@@ -138,6 +160,8 @@ export class TradingEngine {
       entryPrice: row.entry_price != null ? Number(row.entry_price) : null,
       qty: row.position_size != null ? Number(row.position_size) : null,
       pnlUsd: Number(row.pnl_usd ?? 0),
+      stopped: false,
+      positionOpenAt: row.position_side ? Date.now() : 0,
       listener: () => {},
     }
   }
@@ -168,6 +192,7 @@ export class TradingEngine {
     const sma = state.window.reduce((a, b) => a + b, 0) / state.window.length
 
     if (!state.positionSide) {
+      if (state.stopped) return // no new entries once stopped
       const momentum = state.strategy === 'momentum'
       const longSignal = momentum
         ? price > sma * (1 + this.BAND)
@@ -181,10 +206,14 @@ export class TradingEngine {
       return
     }
 
+    // Position management — only close at a profit (interim demo behavior).
     const entry = state.entryPrice!
     const pnlPct =
       state.positionSide === 'LONG' ? (price - entry) / entry : (entry - price) / entry
-    if (pnlPct >= this.TAKE_PROFIT || pnlPct <= -this.STOP_LOSS) {
+    const held = Date.now() - state.positionOpenAt
+    const bankWin =
+      pnlPct >= this.MIN_PROFIT_PCT && (state.stopped || held > this.BANK_MS)
+    if (pnlPct >= this.TAKE_PROFIT || bankWin) {
       await this.closePosition(state, price)
     }
   }
@@ -213,6 +242,7 @@ export class TradingEngine {
     state.entryPrice = fill
     state.qty = qty
     state.lastTradeAt = Date.now()
+    state.positionOpenAt = Date.now()
     emitToUser(state.userId, 'trade:filled', {
       bot_id: state.id,
       symbol: state.symbol,
@@ -295,6 +325,12 @@ export class TradingEngine {
     emitToUser(state.userId, 'wallet:update', {
       balance: Number(rows[0]?.balance_usd ?? 0),
     })
+
+    // A stopped bot is fully done once its position has banked its profit.
+    if (state.stopped) {
+      this.states.delete(state.id)
+      this.feed.unsubscribe(state.symbol, state.listener)
+    }
   }
 
   /** Fill price with adverse slippage vs the mark price. */
