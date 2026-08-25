@@ -28,4 +28,6 @@ export const config = {
   platformSolAddress: process.env.PLATFORM_SOL_ADDRESS || '', // USDC SPL (Solana)
   etherscanApiKey: process.env.ETHERSCAN_API_KEY || '',
   solanaRpcUrl: process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com',
+  // Mock funds seeded into one-click demo accounts.
+  demoSeedBalance: Number(process.env.DEMO_SEED_BALANCE || 10000),
 }

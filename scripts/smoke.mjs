@@ -110,6 +110,21 @@ r = await req('/api/auth/signup', {
 })
 check('duplicate username rejected', r.status === 409)
 
+console.log('2c. Demo (testnet) account')
+r = await req('/api/auth/demo', { method: 'POST' })
+check('demo account created', r.status === 201 && !!r.data.token && r.data.demo === true, JSON.stringify(r.data).slice(0, 160))
+const demoToken = r.data.token
+r = await req('/api/wallet', { token: demoToken })
+check('demo wallet seeded with mock funds', r.data.balance === 10000, `balance=${r.data.balance}`)
+r = await req('/api/profile', { token: demoToken })
+check('demo profile flagged', r.data.profile?.demo === true)
+r = await req('/api/bots', { method: 'POST', token: demoToken, body: { symbol: 'ETHUSDT', strategy: 'momentum', capital: 2000 } })
+const demoBotId = r.data.bot?.id
+r = await req(`/api/bots/${demoBotId}/start`, { method: 'POST', token: demoToken })
+check('demo user can trade immediately', r.status === 200 && r.data.bot?.status === 'running')
+r = await req(`/api/bots/${demoBotId}/stop`, { method: 'POST', token: demoToken })
+check('demo user can stop', r.status === 200)
+
 console.log('3. Email verification')
 r = await req('/api/auth/verify-email', { method: 'POST', body: { token: tokenFromLink(verifyLink) } })
 check('POST /api/auth/verify-email', r.status === 200 && r.data.ok === true)

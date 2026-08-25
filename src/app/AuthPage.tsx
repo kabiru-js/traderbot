@@ -1,10 +1,10 @@
 import { useState, type FormEvent } from 'react'
 import { TwoFactorRequiredError, useAuth } from '../store'
 import { disconnectSocket } from '../socket'
-import { Card, ErrorBox, Field, GradientButton, inputStyle } from './ui'
+import { Card, ErrorBox, Field, GhostButton, GradientButton, inputStyle } from './ui'
 
 export default function AuthPage() {
-  const { login, signup } = useAuth()
+  const { login, signup, startDemo } = useAuth()
   const [mode, setMode] = useState<'login' | 'signup'>('signup')
   const [name, setName] = useState('')
   const [username, setUsername] = useState('')
@@ -30,6 +30,19 @@ export default function AuthPage() {
       } else {
         setError(err instanceof Error ? err.message : 'Request failed')
       }
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const tryDemo = async () => {
+    setError(null)
+    setBusy(true)
+    try {
+      disconnectSocket()
+      await startDemo()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Request failed')
     } finally {
       setBusy(false)
     }
@@ -157,6 +170,11 @@ export default function AuthPage() {
                 {mode === 'signup' ? 'Log in' : 'Create account'}
               </button>
             </p>
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: 16, paddingTop: 16 }}>
+              <GhostButton onClick={tryDemo} disabled={busy} style={{ width: '100%' }}>
+                {busy ? 'Creating…' : 'Try demo account — $10,000 mock funds'}
+              </GhostButton>
+            </div>
           </Card>
         </div>
       </div>

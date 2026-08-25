@@ -1,3 +1,4 @@
+import crypto from 'node:crypto'
 import { Router } from 'express'
 import { pool } from '../db'
 import {
@@ -246,6 +247,45 @@ r.post('/login', async (req, res) => {
 
 r.get('/me', authMiddleware, (req, res) => {
   res.json({ user: requireUser(req) })
+})
+
+// ── One-click demo (testnet) account ─────────────────────────────
+r.post('/demo', async (_req, res) => {
+  const suffix = crypto.randomBytes(6).toString('hex')
+  const email = `demo-${suffix}@demo.local`
+  const passwordHash = await hashPassword(crypto.randomBytes(16).toString('hex'))
+  const { rows } = await pool.query(
+    `INSERT INTO users (email, password_hash, name, role, is_demo, email_verified_at)
+     VALUES ($1, $2, 'Demo Trader', 'user', true, now())
+     RETURNING id, email, name, role`,
+    [email, passwordHash],
+  )
+  await pool.query('INSERT INTO wallets (user_id) VALUES ($1)', [rows[0].id])
+
+  // Seed mock funds so demo users can trade immediately.
+  await pool.query(
+    'UPDATE wallets SET balance_usd = balance_usd + $1, updated_at = now() WHERE user_id = $2',
+    [config.demoSeedBalance, rows[0].id],
+  )
+  await pool.query(
+    'INSERT INTO transactions (user_id, type, amount, reference) VALUES ($1, $2, $3, $4)',
+    [rows[0].id, 'deposit', config.demoSeedBalance, 'demo-seed'],
+  )
+  await notifyUser(
+    rows[0].id,
+    'system',
+    'Welcome to the demo',
+    `${config.demoSeedBalance.toLocaleString()} USD of mock funds added — trade freely.`,
+  )
+
+  const user = {
+    id: rows[0].id as string,
+    email: rows[0].email as string,
+    name: rows[0].name as string,
+    role: 'user',
+    isDemo: true,
+  }
+  res.status(201).json({ user, token: signToken(user), demo: true })
 })
 
 // ── Two-factor authentication (TOTP) ──────────────────────────────

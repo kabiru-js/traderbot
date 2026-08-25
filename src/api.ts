@@ -53,6 +53,7 @@ export interface User {
   name: string
   role?: string
   username?: string
+  isDemo?: boolean
 }
 
 export interface Profile {
@@ -61,6 +62,7 @@ export interface Profile {
   username: string | null
   name: string
   role: string
+  demo: boolean
   emailVerified: boolean
   twoFactorEnabled: boolean
   createdAt: string
@@ -230,6 +232,7 @@ export const api = {
       body: JSON.stringify({ email, password, totpCode }),
     }),
   me: () => request<{ user: User }>('/auth/me'),
+  authDemo: () => request<{ user: User; token: string; demo: boolean }>('/auth/demo', { method: 'POST' }),
   verifyEmail: (token: string) =>
     request<{ ok: boolean }>('/auth/verify-email', { method: 'POST', body: JSON.stringify({ token }) }),
   resendVerification: () =>

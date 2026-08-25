@@ -82,6 +82,7 @@ export default function AppArea({ onExit }: { onExit: () => void }) {
           marketFeed={health.data?.marketFeed ?? 'live'}
           unread={notif.data?.unread ?? 0}
           userName={user?.name ?? user?.username ?? ''}
+          isDemo={user?.isDemo}
           onNotifications={() => navigate('alerts')}
           onLogout={handleLogout}
         />

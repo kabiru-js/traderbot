@@ -211,6 +211,7 @@ export function TopBar({
   marketFeed,
   unread,
   userName,
+  isDemo,
   onNotifications,
   onLogout,
 }: {
@@ -220,6 +221,7 @@ export function TopBar({
   marketFeed: string
   unread: number
   userName: string
+  isDemo?: boolean
   onNotifications: () => void
   onLogout: () => void
 }) {
@@ -274,6 +276,22 @@ export function TopBar({
         </div>
 
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 18 }}>
+          {isDemo && (
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 800,
+                letterSpacing: '0.08em',
+                color: '#10B981',
+                background: 'rgba(16,185,129,0.12)',
+                border: '1px solid rgba(16,185,129,0.3)',
+                borderRadius: 6,
+                padding: '3px 8px',
+              }}
+            >
+              DEMO
+            </span>
+          )}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span
               style={{

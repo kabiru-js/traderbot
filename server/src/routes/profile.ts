@@ -10,7 +10,7 @@ const USERNAME_RE = /^[a-z0-9_]{3,30}$/
 r.get('/', async (req, res) => {
   const u = requireUser(req)
   const { rows } = await pool.query(
-    `SELECT id, email, username, name, role, email_verified_at, two_factor_enabled, created_at
+    `SELECT id, email, username, name, role, is_demo, email_verified_at, two_factor_enabled, created_at
      FROM users WHERE id = $1`,
     [u.id],
   )
@@ -26,6 +26,7 @@ r.get('/', async (req, res) => {
       username: row.username ?? null,
       name: row.name,
       role: row.role,
+      demo: !!row.is_demo,
       emailVerified: !!row.email_verified_at,
       twoFactorEnabled: row.two_factor_enabled,
       createdAt: row.created_at,

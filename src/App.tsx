@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, type CSSProperties, type ReactNode } from 'react'
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell,
@@ -203,6 +203,7 @@ function Nav({ active, setActive, onLaunch }: { active: string; setActive: (s: s
         </div>
         {/* CTA Buttons */}
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <DemoEntry onEntered={onLaunch}>Try Demo</DemoEntry>
           <button style={{
             background: 'transparent', border: '1px solid rgba(255,255,255,0.12)',
             color: '#94A3B8', padding: '8px 18px', borderRadius: 8, cursor: 'pointer',
@@ -345,15 +346,9 @@ function Hero({ onLaunch }: { onLaunch: () => void }) {
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'none' }}
           onClick={onLaunch}
           >Start Investing →</button>
-          <button style={{
-            background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)',
-            color: '#F0F4FF', padding: '16px 36px', borderRadius: 12, cursor: 'pointer',
-            fontSize: 15, fontWeight: 500, transition: 'all 0.3s',
-            backdropFilter: 'blur(12px)',
-          }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.08)' }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)' }}
-          >▶ Watch AI in Action</button>
+          <DemoEntry onEntered={onLaunch} style={{ padding: '16px 36px', borderRadius: 12, fontSize: 15, fontWeight: 600, background: 'rgba(16,185,129,0.06)' }}>
+            ▶ Try Demo — $10,000 mock funds
+          </DemoEntry>
         </div>
         {/* Trust indicators */}
         <div className="fade-in-up delay-4" style={{ display: 'flex', gap: 32,
@@ -1199,6 +1194,47 @@ function AppShell({ onExit }: { onExit: () => void }) {
   const { user, loading } = useAuth()
   if (loading) return null
   return user ? <AppArea onExit={onExit} /> : <AuthPage />
+}
+
+/** One-click demo/testnet account entry (rendered inside AuthProvider). */
+function DemoEntry({
+  onEntered,
+  style,
+  children,
+}: {
+  onEntered: () => void
+  style?: CSSProperties
+  children?: ReactNode
+}) {
+  const { startDemo, loading } = useAuth()
+  return (
+    <button
+      disabled={loading}
+      onClick={async () => {
+        try {
+          await startDemo()
+        } catch {
+          // fall through — the auth page explains errors if it opens
+        }
+        onEntered()
+      }}
+      style={{
+        background: 'rgba(16,185,129,0.08)',
+        border: '1px solid rgba(16,185,129,0.35)',
+        color: '#10B981',
+        padding: '8px 16px',
+        borderRadius: 8,
+        cursor: loading ? 'wait' : 'pointer',
+        fontSize: 12,
+        fontWeight: 700,
+        fontFamily: 'Inter',
+        transition: 'all 0.2s',
+        ...style,
+      }}
+    >
+      {loading ? 'Creating demo account…' : (children ?? 'Try Demo')}
+    </button>
+  )
 }
 
 // ── APP ───────────────────────────────────────────────────────────────────────
