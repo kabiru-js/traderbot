@@ -1,4 +1,4 @@
-# NeuralVault — AI Crypto Trading Platform
+# Nexora AI — AI Crypto Trading Platform
 
 React + Vite frontend (marketing site + authenticated app) with a Node.js/TypeScript
 backend: JWT auth, wallet with deposits, paper-trading bots that react to live

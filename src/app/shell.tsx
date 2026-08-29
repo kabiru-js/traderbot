@@ -158,7 +158,7 @@ export function Sidebar({
           ⬡
         </div>
         <span style={{ fontFamily: 'Outfit', fontWeight: 700, fontSize: 17, color: '#F0F4FF' }}>
-          NeuralVault
+          Nexora AI
         </span>
       </div>
 

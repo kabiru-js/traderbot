@@ -152,7 +152,7 @@ export default function AuthPage() {
               </GradientButton>
             </form>
             <p style={{ textAlign: 'center', color: '#475569', fontSize: 13, marginTop: 16 }}>
-              {mode === 'signup' ? 'Already have an account? ' : "New to NeuralVault? "}
+              {mode === 'signup' ? 'Already have an account? ' : "New to Nexora AI? "}
               <button
                 onClick={() => {
                   setMode((m) => (m === 'signup' ? 'login' : 'signup'))

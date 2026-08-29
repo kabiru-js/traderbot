@@ -1,4 +1,4 @@
-# Local Postgres for the NeuralVault backend.
+# Local Postgres for the Nexora AI backend.
 #   docker compose up -d
 # Then run the API with:  pnpm dev:server   (from the repo root)
 services:
@@ -7,7 +7,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: neuralvault
+      POSTGRES_DB: nexora
     ports:
       - "5432:5432"
     volumes:

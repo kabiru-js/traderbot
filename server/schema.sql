@@ -1,4 +1,4 @@
--- NeuralVault schema — idempotent, safe to run on every boot.
+-- Nexora AI schema — idempotent, safe to run on every boot.
 -- gen_random_uuid() is built into PostgreSQL 13+ (no extension needed).
 
 CREATE TABLE IF NOT EXISTS users (

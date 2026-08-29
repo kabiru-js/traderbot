@@ -86,7 +86,7 @@ r.post('/signup', async (req, res) => {
   const link = buildLink('verify-email', token)
   await sendEmail(
     email,
-    'Verify your NeuralVault email',
+    'Verify your Nexora AI email',
     `<p>Welcome! Confirm your email to finish signing up:</p><p><a href="${link}">Verify email</a></p>`,
   )
 
@@ -140,7 +140,7 @@ r.post('/resend-verification', authMiddleware, async (req, res) => {
   const link = buildLink('verify-email', token)
   await sendEmail(
     user.email,
-    'Verify your NeuralVault email',
+    'Verify your Nexora AI email',
     `<p>Confirm your email:</p><p><a href="${link}">Verify email</a></p>`,
   )
   res.json({ ok: true, devLink: config.demoMode ? link : undefined })
@@ -158,7 +158,7 @@ r.post('/forgot-password', async (req, res) => {
     const link = buildLink('reset-password', token)
     await sendEmail(
       rows[0].email,
-      'Reset your NeuralVault password',
+      'Reset your Nexora AI password',
       `<p>Use this link to reset your password (valid 30 minutes):</p><p><a href="${link}">Reset password</a></p>`,
     )
     if (config.demoMode) res.json({ devLink: link })
@@ -299,7 +299,7 @@ r.post('/2fa/setup', authMiddleware, async (req, res) => {
   const u = requireUser(req)
   const { authenticator } = await import('otplib')
   const secret = authenticator.generateSecret()
-  const otpauthUrl = authenticator.keyuri(u.email, 'NeuralVault', secret)
+  const otpauthUrl = authenticator.keyuri(u.email, 'NexoraAI', secret)
   await pool.query('UPDATE users SET two_factor_secret = $1 WHERE id = $2', [
     secret,
     u.id,

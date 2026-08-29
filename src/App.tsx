@@ -59,11 +59,11 @@ const STATS = [
 ]
 
 const TESTIMONIALS = [
-  { name: 'Marcus Thompson',  country: 'United States', role: 'Software Engineer',   img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&auto=format', review: "I've tried a dozen platforms. NeuralVault is the only one where I actually feel like a professional investor. The AI genuinely outperforms everything I tried manually." },
+  { name: 'Marcus Thompson',  country: 'United States', role: 'Software Engineer',   img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&auto=format', review: "I've tried a dozen platforms. Nexora AI is the only one where I actually feel like a professional investor. The AI genuinely outperforms everything I tried manually." },
   { name: 'Priya Sharma',     country: 'India',         role: 'Financial Analyst',   img: 'https://images.unsplash.com/photo-1494790108755-2616b612b73c?w=80&h=80&fit=crop&auto=format', review: "The risk management alone is worth the subscription. It automatically reduced my exposure before the last major correction. I barely felt the drawdown." },
   { name: 'Lucas Hoffmann',   country: 'Germany',       role: 'Entrepreneur',        img: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop&auto=format', review: "Clean, fast, and genuinely intelligent. The dashboard gives me everything I need at a glance. My portfolio is up 38% since I joined six months ago." },
   { name: 'Aiko Tanaka',      country: 'Japan',         role: 'Portfolio Manager',   img: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop&auto=format', review: "As a professional, I was skeptical. The AI's portfolio optimization methodology is genuinely sophisticated. I use it alongside my institutional work now." },
-  { name: 'Sarah Mitchell',   country: 'Australia',     role: 'Complete Beginner',   img: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=80&h=80&fit=crop&auto=format', review: "I knew nothing about crypto six months ago. NeuralVault made it completely accessible. The AI handles everything — I just watch my balance grow." },
+  { name: 'Sarah Mitchell',   country: 'Australia',     role: 'Complete Beginner',   img: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=80&h=80&fit=crop&auto=format', review: "I knew nothing about crypto six months ago. Nexora AI made it completely accessible. The AI handles everything — I just watch my balance grow." },
 ]
 
 const FAQS = [
@@ -72,7 +72,7 @@ const FAQS = [
   { q: 'Can I withdraw anytime?', a: 'Yes. There are no lock-up periods or withdrawal gates. You can initiate a withdrawal at any time from the dashboard and receive your funds within 24 hours to any wallet or exchange address.' },
   { q: 'What cryptocurrencies are supported?', a: 'We currently support 150+ digital assets including BTC, ETH, XRP, SOL, AVAX, XLM, ADA, DOGE, LINK, MATIC, and more. New assets are added regularly based on liquidity and community demand.' },
   { q: 'How much does it cost?', a: 'We offer three plans: Starter (free, 1 AI strategy), Professional ($49/mo, 5 strategies + advanced analytics), and Enterprise ($149/mo, unlimited strategies + dedicated account manager). All plans have a 14-day free trial.' },
-  { q: 'Can beginners use this?', a: 'Absolutely. NeuralVault was designed from the ground up for people with zero trading experience. Our AI handles all decisions automatically. You choose a risk level, deposit crypto, and monitor your performance — no trading knowledge required.' },
+  { q: 'Can beginners use this?', a: 'Absolutely. Nexora AI was designed from the ground up for people with zero trading experience. Our AI handles all decisions automatically. You choose a risk level, deposit crypto, and monitor your performance — no trading knowledge required.' },
 ]
 
 const EXCHANGES = ['Binance','Bybit','Kraken','OKX','Coinbase','KuCoin','Gate.io','Bitget']
@@ -183,7 +183,7 @@ function Nav({ active, setActive, onLaunch }: { active: string; setActive: (s: s
             fontSize: 18, boxShadow: '0 0 20px rgba(14,165,233,0.4)',
           }}>⬡</div>
           <span style={{ fontFamily: 'Outfit', fontWeight: 700, fontSize: 20, color: '#F0F4FF',
-            letterSpacing: '-0.02em' }}>NeuralVault</span>
+            letterSpacing: '-0.02em' }}>Nexora AI</span>
         </div>
         {/* Desktop Links */}
         <div style={{ display: 'flex', gap: 4 }} className="hidden-mobile">
@@ -441,7 +441,7 @@ function About() {
             </h2>
             <p style={{ color: '#94A3B8', lineHeight: 1.8, marginBottom: 32, fontSize: 16 }}>
               Whether you're depositing your first $100 or managing a seven-figure portfolio,
-              NeuralVault's AI does the heavy lifting. No trading charts to study. No complex
+              Nexora's AI does the heavy lifting. No trading charts to study. No complex
               strategies to learn. The AI handles everything — from spotting opportunities to
               managing risk — while you watch your digital assets grow.
             </p>
@@ -627,7 +627,7 @@ function Dashboard() {
               <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
                 <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 8,
                   padding: '5px 16px', fontSize: 11, color: '#475569', fontFamily: 'JetBrains Mono' }}>
-                  app.neuralvault.ai/dashboard
+                  app.nexora.ai/dashboard
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -1011,7 +1011,7 @@ function Contact() {
             </p>
             {[
               { icon: '📍', label: 'Address', val: '1 Canada Square, Canary Wharf, London, E14 5AB' },
-              { icon: '✉️', label: 'Email', val: 'hello@neuralvault.ai' },
+              { icon: '✉️', label: 'Email', val: 'hello@nexora.ai' },
               { icon: '📞', label: 'Phone', val: '+44 20 7946 0123' },
               { icon: '💬', label: 'Live Chat', val: 'Available 24/7 via in-app chat' },
               { icon: '🕐', label: 'Support Hours', val: 'Mon–Fri, 9AM–6PM GMT' },
@@ -1132,7 +1132,7 @@ function Footer() {
                 background: 'linear-gradient(135deg, #0EA5E9, #8B5CF6)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 18, boxShadow: '0 0 20px rgba(14,165,233,0.4)' }}>⬡</div>
-              <span style={{ fontFamily: 'Outfit', fontWeight: 700, fontSize: 20, color: '#F0F4FF' }}>NeuralVault</span>
+              <span style={{ fontFamily: 'Outfit', fontWeight: 700, fontSize: 20, color: '#F0F4FF' }}>Nexora AI</span>
             </div>
             <p style={{ color: '#475569', fontSize: 13, lineHeight: 1.7, marginBottom: 24, maxWidth: 260 }}>
               AI-powered digital asset management for everyone. Invest smarter, not harder.
@@ -1172,7 +1172,7 @@ function Footer() {
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 24,
           display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
           <p style={{ color: '#2D3748', fontSize: 12 }}>
-            © 2024 NeuralVault Ltd. All rights reserved. Cryptocurrency investments carry risk.
+            © 2024 Nexora AI Ltd. All rights reserved. Cryptocurrency investments carry risk.
             Past performance is not indicative of future results.
           </p>
           <div style={{ display: 'flex', gap: 6 }}>

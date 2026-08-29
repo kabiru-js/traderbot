@@ -17,7 +17,7 @@ export async function createCheckoutSession(
       {
         price_data: {
           currency: 'usd',
-          product_data: { name: 'NeuralVault wallet deposit' },
+          product_data: { name: 'Nexora AI wallet deposit' },
           unit_amount: Math.round(amountUsd * 100),
         },
         quantity: 1,

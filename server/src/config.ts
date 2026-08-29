@@ -14,7 +14,7 @@ export const config = {
   appUrl: process.env.APP_URL || 'http://localhost:8443',
   // Email delivery (Resend). Without a key, emails are logged instead.
   resendApiKey: process.env.RESEND_API_KEY || '',
-  resendFrom: process.env.RESEND_FROM || 'NeuralVault <onboarding@resend.dev>',
+  resendFrom: process.env.RESEND_FROM || 'Nexora AI <onboarding@resend.dev>',
   // Encryption key for exchange API secrets (any string; hashed to 32 bytes).
   encryptionKey: process.env.ENCRYPTION_KEY || 'dev-encryption-key-change-me',
   // Email that gets the admin role on signup.
